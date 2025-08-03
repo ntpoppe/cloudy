@@ -1,0 +1,6 @@
+@Cloudy.API_HostAddress = http://localhost:5114
+
+GET {{Cloudy.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
