@@ -47,6 +47,6 @@ jobs:
     # FRONTEND
       - name: Install deps & build front-end
         run: |
-          cd web
+          cd client
           npm ci
           npm run build
