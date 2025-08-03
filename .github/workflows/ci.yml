@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # .NET SDK + NuGet cache
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '9.0.x' }
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key:  ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # Node.js + npm cache
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key:  ${{ runner.os }}-npm-${{ hashFiles('web/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+    # BACKEND
+      - name: Restore / Build / Test back-end
+        run: |
+          cd server
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+          dotnet test  --configuration Release --no-build --logger "console;verbosity=normal"
+
+    # FRONTEND
+      - name: Install deps & build front-end
+        run: |
+          cd web
+          npm ci
+          npm run build

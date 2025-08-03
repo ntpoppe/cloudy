@@ -1,4 +1,4 @@
-﻿namespace Cloudy.UnitTests;
+﻿namespace Cloudy.Infrastructure.Tests;
 
 public class UnitTest1
 {
