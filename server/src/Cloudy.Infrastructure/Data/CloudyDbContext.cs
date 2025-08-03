@@ -8,6 +8,7 @@ public class CloudyDbContext : DbContext
     public CloudyDbContext(DbContextOptions<CloudyDbContext> options)
         : base(options) { }
 
+    public DbSet<User> Users { get; set; } = null!;
     public DbSet<Domain.Entities.File> Files { get; set; } = null!;
     public DbSet<Folder> Folders { get; set; } = null!;
 

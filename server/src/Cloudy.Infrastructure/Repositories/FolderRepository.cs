@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cloudy.Infrastructure.Repositories;
 
-public class EfFolderRepository : IFolderRepository
+public class FolderRepository : IFolderRepository
 {
     private readonly CloudyDbContext _context;
 
-    public EfFolderRepository(CloudyDbContext context)
+    public FolderRepository(CloudyDbContext context)
         => _context = context;
 
     public async Task<Folder?> GetByIdAsync(int id)

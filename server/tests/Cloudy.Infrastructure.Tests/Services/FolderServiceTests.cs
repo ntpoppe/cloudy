@@ -1,8 +1,10 @@
 using Cloudy.Application.Interfaces;
-using Cloudy.Application.Services;
+using Cloudy.Infrastructure.Services;
 using Cloudy.Domain.Entities;
 using FluentAssertions;
 using Moq;
+
+namespace Cloudy.Infrastructure.Tests.Services;
 
 public class FolderServiceTests
 {

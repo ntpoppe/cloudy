@@ -21,16 +21,22 @@ public static class DependencyInjection
             opts.UseNpgsql(config.GetConnectionString("DefaultConnection")));
 
         // Repositories & UoW
-        services.AddScoped<IFileRepository, EfFileRepository>();
-        services.AddScoped<IFolderRepository, EfFolderRepository>();
+        services.AddScoped<IFileRepository, FileRepository>();
+        services.AddScoped<IFolderRepository, FolderRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        // Services
+        services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IFolderService, FolderService>();
+        services.AddScoped<IUserService, UserService>();
 
         // File storage
         // services.AddSingleton<IFileStorage, LocalFileStorage>();
 
         // Jwt
         services.Configure<JwtSettings>(config.GetSection("Jwt"));
-        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+        services.AddSingleton<IJwtService, JwtService>();
 
         return services;
     }

@@ -1,6 +1,6 @@
 namespace Cloudy.Application.Interfaces;
 
-public interface IJwtTokenService 
+public interface IJwtService 
 {
     string CreateToken(int userId, string userName);
 }

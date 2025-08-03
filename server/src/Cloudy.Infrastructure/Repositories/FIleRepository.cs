@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cloudy.Infrastructure.Repositories;
 
-public class EfFileRepository : IFileRepository
+public class FileRepository : IFileRepository
 {
     private readonly CloudyDbContext _context;
     
-    public EfFileRepository(CloudyDbContext context)
+    public FileRepository(CloudyDbContext context)
         => _context = context;
     public Task<Domain.Entities.File?> GetByIdAsync(int id)
         => _context.Files.FirstOrDefaultAsync(f => f.Id == id);

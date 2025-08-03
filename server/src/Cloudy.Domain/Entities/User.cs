@@ -1,13 +1,23 @@
 namespace Cloudy.Domain.Entities;
 
-public class User : Entity
+public class User : TrackableEntity
 {
     public string Username { get; private set; }
-    public string Password { get; private set; } // hash this later
+    public string PasswordHash { get; private set; }
+    public string Email { get; private set; }
 
-    public User(string username, string password)
+    // EF
+    public User()
+    {
+        Username = null!;
+        PasswordHash = null!;
+        Email = null!;
+    }
+
+    public User(string username, string passwordHash, string email)
     {
         Username = username;
-        Password = password;
+        PasswordHash = passwordHash;
+        Email = email;
     }
 }
