@@ -16,6 +16,14 @@ public sealed class FileMetadata : IEquatable<FileMetadata>
         => other is not null
            && other.ContentType == ContentType
            && other.UploadedAt == UploadedAt;
+
     public override bool Equals(object? obj) => Equals(obj as FileMetadata);
+
     public override int GetHashCode() => HashCode.Combine(ContentType, UploadedAt);
+
+    public static bool operator ==(FileMetadata? left, FileMetadata? right) =>
+        left is null ? right is null : left.Equals(right);
+
+    public static bool operator !=(FileMetadata? left, FileMetadata? right) =>
+        !(left == right);
 }

@@ -56,7 +56,7 @@ public class FileService : IFileService
         if (file == null)
             throw new InvalidOperationException("'file' null in FileService.DeleteAsync");
 
-        file.SoftDelete(id);
+        file.SoftDelete();
         _fileRepo.Update(file);
         await _uow.SaveChangesAsync();
     }

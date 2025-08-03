@@ -50,7 +50,7 @@ public class FolderService : IFolderService
         if (folder == null)
             throw new InvalidOperationException("'folder' null in FolderService.DeleteAsync");
 
-        folder.SoftDelete(id);
+        folder.SoftDelete();
         _folderRepo.Update(folder);
         await _uow.SaveChangesAsync();
     }
