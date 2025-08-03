@@ -2,6 +2,8 @@ using Cloudy.Application.Interfaces;
 using Cloudy.Infrastructure.Data;
 //using Cloudy.Infrastructure.FileStorage;
 using Cloudy.Infrastructure.Repositories;
+using Cloudy.Infrastructure.Services;
+using Cloudy.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +27,10 @@ public static class DependencyInjection
 
         // File storage
         // services.AddSingleton<IFileStorage, LocalFileStorage>();
+
+        // Jwt
+        services.Configure<JwtSettings>(config.GetSection("Jwt"));
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         return services;
     }
