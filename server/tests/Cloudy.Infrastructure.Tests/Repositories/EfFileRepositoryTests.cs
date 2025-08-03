@@ -79,7 +79,7 @@ public class EfFileRepositoryTests
 
         var keep = new CloudyFile("keep.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow));
         var del  = new CloudyFile("del.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow));
-        del.SoftDelete(userId: 123);
+        del.SoftDelete();
 
         await repo.AddAsync(keep);
         await repo.AddAsync(del);
