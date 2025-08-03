@@ -19,7 +19,7 @@ public class Folder : TrashableEntity
         ParentFolderId = parentFolderId;
     }
 
-    public void Rename(string newName)
+    public void Rename(string? newName)
     {
         if (string.IsNullOrWhiteSpace(newName))
             throw new DomainException("Name cannot be empty.");
