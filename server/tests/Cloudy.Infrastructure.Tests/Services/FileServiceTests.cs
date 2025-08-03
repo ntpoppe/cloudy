@@ -1,12 +1,11 @@
-﻿using Cloudy.Application.DTOs;
-using Cloudy.Application.Interfaces;
-using Cloudy.Application.Services;
-using Cloudy.Domain.Entities;
+﻿using Cloudy.Application.Interfaces;
+using Cloudy.Infrastructure.Services;
 using Cloudy.Domain.ValueObjects;
 using FluentAssertions;
 using Moq;
-using Xunit;
 using CloudyFile = Cloudy.Domain.Entities.File;
+
+namespace Cloudy.Infrastructure.Tests.Services;
 
 public class FileServiceTests
 {

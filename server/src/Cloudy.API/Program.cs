@@ -21,7 +21,6 @@ if (jwt == null || string.IsNullOrWhiteSpace(jwt.Key))
 //----------------------
 // Service Registration
 //----------------------
-builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 

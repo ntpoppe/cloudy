@@ -3,7 +3,7 @@ using Cloudy.Application.DTOs;
 using Cloudy.Application.Interfaces;
 using Cloudy.Domain.Entities;
 
-namespace Cloudy.Application.Services;
+namespace Cloudy.Infrastructure.Services;
 
 public class FolderService : IFolderService
 {

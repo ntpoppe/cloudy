@@ -9,11 +9,11 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Cloudy.Infrastructure.Services;
 
-public class JwtTokenService : IJwtTokenService
+public class JwtService : IJwtService
 {
     private readonly JwtSettings _settings;
 
-    public JwtTokenService(IOptions<JwtSettings> opts)
+    public JwtService(IOptions<JwtSettings> opts)
     {
         _settings = opts.Value;
     }

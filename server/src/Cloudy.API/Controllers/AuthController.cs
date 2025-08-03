@@ -9,9 +9,9 @@ namespace Cloudy.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly IJwtTokenService _jwtService;
+    private readonly IJwtService _jwtService;
 
-    public AuthController(IUserService userService, IJwtTokenService jwtService)
+    public AuthController(IUserService userService, IJwtService jwtService)
     {
         _userService = userService;
         _jwtService = jwtService;
@@ -20,7 +20,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
-        var user = await _userService.RegisterAsync(dto.Username, dto.Password);
+        var user = await _userService.RegisterAsync(dto);
         var token = _jwtService.CreateToken(user.Id, user.Username);
         return Ok(new { token });
     }
@@ -28,7 +28,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
-        var user = await _userService.ValidateCredentialsAsync(dto.Username, dto.Password);
+        var user = await _userService.AuthenticateAsync(dto);
         if (user is null)
             return Unauthorized();
         var token = _jwtService.CreateToken(user.Id, user.Username);

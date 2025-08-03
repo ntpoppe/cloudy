@@ -6,7 +6,7 @@ using FluentAssertions;
 
 namespace Cloudy.Infrastructure.Tests.Repositories;
 
-public class EfFolderRepositoryTests
+public class FolderRepositoryTests
 {
     private CloudyDbContext GetContext([System.Runtime.CompilerServices.CallerMemberName]string name = "")
         => InMemoryContextFactory.Create($"FolderRepo_{name}");
@@ -15,7 +15,7 @@ public class EfFolderRepositoryTests
     public async Task AddAndGetById_Works()
     {
         var ctx = GetContext();
-        var repo = new EfFolderRepository(ctx);
+        var repo = new FolderRepository(ctx);
         var folder = new Folder("root");
 
         await repo.AddAsync(folder);
@@ -30,7 +30,7 @@ public class EfFolderRepositoryTests
     public async Task GetByIdAsync_Should_Return_Null_When_NotFound()
     {
         var ctx = GetContext();
-        var repo = new EfFolderRepository(ctx);
+        var repo = new FolderRepository(ctx);
 
         var result = await repo.GetByIdAsync(-1);
         result.Should().BeNull();
@@ -41,7 +41,7 @@ public class EfFolderRepositoryTests
     {
         // Arrange
         var ctx = GetContext();
-        var repo = new EfFolderRepository(ctx);
+        var repo = new FolderRepository(ctx);
 
         var parent = new Folder("p");
         await repo.AddAsync(parent);
