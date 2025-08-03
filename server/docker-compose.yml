@@ -1,0 +1,29 @@
+services:
+  cloudy-db:
+    container_name: cloudy-db
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: cloudy
+      POSTGRES_USER: cloudy_user
+      POSTGRES_PASSWORD: thiswillbechanged
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  cloudy-api:
+    container_name: cloudy-api
+    build:
+      context: .
+      dockerfile: src/Cloudy.API/Dockerfile
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=cloudy-db;Port=5432;Database=cloudy;Username=cloudy_user;Password=thiswillbechanged
+    depends_on:
+      - cloudy-db
+
+volumes:
+  pgdata:
+
