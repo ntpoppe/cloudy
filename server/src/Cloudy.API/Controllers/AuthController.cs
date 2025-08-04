@@ -18,20 +18,24 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterDto dto)
+    public async Task<ActionResult<AuthenticationResponseDto>> Register(RegisterDto dto)
     {
         var user = await _userService.RegisterAsync(dto);
         var token = _jwtService.CreateToken(user.Id, user.Username);
-        return Ok(new { token });
+
+        var userDto = new UserDto(user.Id, user.Username, user.Email);
+        return Ok(new AuthenticationResponseDto(token, userDto));
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto dto)
+    public async Task<ActionResult<AuthenticationResponseDto>> Login(LoginDto dto)
     {
         var user = await _userService.AuthenticateAsync(dto);
         if (user is null)
             return Unauthorized();
+
         var token = _jwtService.CreateToken(user.Id, user.Username);
-        return Ok(new { token });
+        var userDto = new UserDto(user.Id, user.Username, user.Email);
+        return Ok(new AuthenticationResponseDto(token, userDto));
     }
 }

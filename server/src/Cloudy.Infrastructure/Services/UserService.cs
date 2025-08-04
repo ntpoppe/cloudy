@@ -31,7 +31,7 @@ public class UserService : IUserService
 
     public async Task<UserDto?> AuthenticateAsync(LoginDto dto)
     {
-        var user = await _repo.GetByEmailAsync(dto.Email);
+        var user = await _repo.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
         if (user is null) return null;
 
         var ok = _hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);

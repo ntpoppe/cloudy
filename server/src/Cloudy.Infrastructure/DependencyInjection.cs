@@ -1,9 +1,11 @@
 using Cloudy.Application.Interfaces;
+using Cloudy.Domain.Entities;
 using Cloudy.Infrastructure.Data;
 //using Cloudy.Infrastructure.FileStorage;
 using Cloudy.Infrastructure.Repositories;
 using Cloudy.Infrastructure.Services;
 using Cloudy.Infrastructure.Settings;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IFolderService, FolderService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
         // File storage
         // services.AddSingleton<IFileStorage, LocalFileStorage>();
