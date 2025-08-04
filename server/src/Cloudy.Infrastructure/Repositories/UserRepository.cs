@@ -20,5 +20,11 @@ public class UserRepository : IUserRepository
         => await _context.Users.SingleOrDefaultAsync(u => u.Email == email);
 
     public async Task<User?> GetByIdAsync(int id)
-        => await _context.Users.FindAsync(id).AsTask();
+        => await _context.Users.SingleOrDefaultAsync(u => u.Id == id);
+
+    public async Task<User?> GetByUsernameAsync(string username)
+        => await _context.Users.SingleOrDefaultAsync(u => u.Username == username);
+
+    public async Task<User?> GetByUsernameOrEmailAsync(string input)
+        => await GetByEmailAsync(input) ?? await GetByUsernameAsync(input);
 }

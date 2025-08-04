@@ -1,3 +1,6 @@
 namespace Cloudy.Application.DTOs;
 
-public record LoginDto(string Username, string Password, string Email);
+public record LoginDto(
+    string UsernameOrEmail,
+    string Password
+);

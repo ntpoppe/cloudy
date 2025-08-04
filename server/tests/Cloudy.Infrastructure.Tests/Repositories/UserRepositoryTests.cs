@@ -9,7 +9,7 @@ namespace Cloudy.Infrastructure.Tests.Repositories;
 
 public class UserRepositoryTests
 {
-    private CloudyDbContext GetContext([System.Runtime.CompilerServices.CallerMemberName]string name = "")
+    private CloudyDbContext GetContext([System.Runtime.CompilerServices.CallerMemberName] string name = "")
         => InMemoryContextFactory.Create($"UserRepo_{name}");
 
     [Fact]
@@ -27,11 +27,36 @@ public class UserRepositoryTests
     }
 
     [Fact]
+    public async Task GetByEmailAsync_Should_Return_User_When_Exists()
+    {
+        var ctx = GetContext();
+        var repo = new UserRepository(ctx);
+        var user = new User("bob", "hashedpw", "bob@example.com");
+        await repo.AddAsync(user);
+
+        var result = await repo.GetByEmailAsync("bob@example.com");
+
+        result.Should().NotBeNull();
+        result!.Email.Should().Be("bob@example.com");
+    }
+
+    [Fact]
+    public async Task GetByEmailAsync_Should_Return_Null_When_NotFound()
+    {
+        var ctx = GetContext();
+        var repo = new UserRepository(ctx);
+
+        var result = await repo.GetByEmailAsync("notfound@example.com");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
     public async Task GetByIdAsync_Should_Return_User_When_Exists()
     {
         var ctx = GetContext();
         var repo = new UserRepository(ctx);
-        var user = new User("bob", "bob@example.com", "pw");
+        var user = new User("carol", "pw", "carol@example.com");
         await repo.AddAsync(user);
 
         var result = await repo.GetByIdAsync(user.Id);
@@ -47,6 +72,71 @@ public class UserRepositoryTests
         var repo = new UserRepository(ctx);
 
         var result = await repo.GetByIdAsync(-1);
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByUsernameAsync_Should_Return_User_When_Exists()
+    {
+        var ctx = GetContext();
+        var repo = new UserRepository(ctx);
+        var user = new User("dave", "pw", "dave@example.com");
+        await repo.AddAsync(user);
+
+        var result = await repo.GetByUsernameAsync("dave");
+
+        result.Should().NotBeNull();
+        result!.Username.Should().Be("dave");
+    }
+
+    [Fact]
+    public async Task GetByUsernameAsync_Should_Return_Null_When_NotFound()
+    {
+        var ctx = GetContext();
+        var repo = new UserRepository(ctx);
+
+        var result = await repo.GetByUsernameAsync("notfound");
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetByUsernameOrEmailAsync_Should_Return_User_By_Email()
+    {
+        var ctx = GetContext();
+        var repo = new UserRepository(ctx);
+        var user = new User("eve", "pw", "eve@example.com");
+        await repo.AddAsync(user);
+
+        var result = await repo.GetByUsernameOrEmailAsync("eve@example.com");
+
+        result.Should().NotBeNull();
+        result!.Email.Should().Be("eve@example.com");
+    }
+
+    [Fact]
+    public async Task GetByUsernameOrEmailAsync_Should_Return_User_By_Username()
+    {
+        var ctx = GetContext();
+        var repo = new UserRepository(ctx);
+        var user = new User("frank", "pw", "frank@example.com");
+        await repo.AddAsync(user);
+
+        var result = await repo.GetByUsernameOrEmailAsync("frank");
+
+        result.Should().NotBeNull();
+        result!.Username.Should().Be("frank");
+    }
+
+    [Fact]
+    public async Task GetByUsernameOrEmailAsync_Should_Return_Null_When_NotFound()
+    {
+        var ctx = GetContext();
+        var repo = new UserRepository(ctx);
+
+        var result = await repo.GetByUsernameOrEmailAsync("notfound");
+
         result.Should().BeNull();
     }
 }

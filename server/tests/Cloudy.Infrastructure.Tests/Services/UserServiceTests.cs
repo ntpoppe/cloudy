@@ -35,7 +35,7 @@ public class UserServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Email.Should().Be(dto.Email);
+        result.Username.Should().Be(dto.Username);
         _repoMock.Verify(r => r.AddAsync(It.Is<User>(u => u.Email == dto.Email && u.PasswordHash == "hashedpw")), Times.Once);
     }
 
@@ -59,9 +59,9 @@ public class UserServiceTests
     public async Task AuthenticateAsync_Should_Return_Dto_On_Success()
     {
         // Arrange
-        var dto = new LoginDto("eve", "pw", "eve@example.com");
+        var dto = new LoginDto("eve", "pw");
         var user = new User("eve", "hashed", "eve@example.com");
-        _repoMock.Setup(r => r.GetByEmailAsync(dto.Email)).ReturnsAsync(user);
+        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail)).ReturnsAsync(user);
         _hasherMock.Setup(h => h.VerifyHashedPassword(user, user.PasswordHash, dto.Password))
                    .Returns(PasswordVerificationResult.Success);
 
@@ -72,15 +72,15 @@ public class UserServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Email.Should().Be(user.Email);
+        result!.Username.Should().Be(dto.UsernameOrEmail);
     }
 
     [Fact]
     public async Task AuthenticateAsync_Should_Return_Null_If_User_Not_Found()
     {
         // Arrange
-        var dto = new LoginDto("notfound", "pw", "notfound@example.com");
-        _repoMock.Setup(r => r.GetByEmailAsync(dto.Email)).ReturnsAsync((User?)null);
+        var dto = new LoginDto("notfound", "pw");
+        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail)).ReturnsAsync((User?)null);
         var service = CreateService();
 
         // Act
@@ -94,9 +94,9 @@ public class UserServiceTests
     public async Task AuthenticateAsync_Should_Return_Null_If_Password_Invalid()
     {
         // Arrange
-        var dto = new LoginDto("frank", "wrongpw", "frank@example.com");
+        var dto = new LoginDto("frank", "wrongpw");
         var user = new User("frank", "hashed", "frank@example.com");
-        _repoMock.Setup(r => r.GetByEmailAsync(dto.Email)).ReturnsAsync(user);
+        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail)).ReturnsAsync(user);
         _hasherMock.Setup(h => h.VerifyHashedPassword(user, user.PasswordHash, dto.Password))
                    .Returns(PasswordVerificationResult.Failed);
 
@@ -123,8 +123,7 @@ public class UserServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Email.Should().Be(user.Email);
-        result.Id.Should().Be(user.Id);
+        result!.Username.Should().Be(user.Username);
     }
 
     [Fact]

@@ -20,7 +20,7 @@ public class AuthControllerTests
     public async Task Register_Returns_Ok_With_Token()
     {
         // Arrange
-        var dto     = new RegisterDto("testuser", "pass123", "test@example.com");
+        var dto = new RegisterDto("testuser", "pass123", "test@example.com");
         var userDto = new UserDto(1, "testuser", "test@example.com");
 
         _userService
@@ -32,16 +32,14 @@ public class AuthControllerTests
             .Returns("expected-token");
 
         // Act
-        var result = await _controller.Register(dto);
+        var actionResult = await _controller.Register(dto);
 
         // Assert
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var anon = ok.Value!;
-        var prop = anon.GetType().GetProperty("token", BindingFlags.Public | BindingFlags.Instance);
-        Assert.NotNull(prop);
+        var result = Assert.IsType<ActionResult<AuthenticationResponseDto>>(actionResult);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<AuthenticationResponseDto>(okResult.Value);
 
-        var token = prop.GetValue(anon) as string;
-        Assert.Equal("expected-token", token);
+        Assert.Equal("expected-token", response.Token);
 
         _userService.Verify(s => s.RegisterAsync(dto), Times.Once);
         _jwtService.Verify(s => s.CreateToken(userDto.Id, userDto.Username), Times.Once);
