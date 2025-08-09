@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Separator } from "@/components/ui/Separator";
+import { Button, Input, Label, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from "@/components/ui";
 import { Cloud, Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 //import cloudHero from "@/assets/cloud-hero.jpg";
 

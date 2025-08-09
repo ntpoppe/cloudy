@@ -112,6 +112,14 @@
   }
 }
 
+/* Utility: hide horizontal scrollbar for breadcrumb while keeping scrollability */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
 @layer base {
   * {
     @apply border-border;
@@ -119,5 +127,17 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Show pointer cursor on interactive elements */
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  label,
+  summary {
+    cursor: pointer;
   }
 }
