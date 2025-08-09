@@ -4,12 +4,14 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Separator } from "@/components/ui/Separator";
-import { Cloud, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Cloud, Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 //import cloudHero from "@/assets/cloud-hero.jpg";
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,6 +29,13 @@ const LoginPage = () => {
     e.preventDefault();
     // Handle login/register logic here
     console.log(isLogin ? "Login" : "Register", formData);
+  };
+
+  const handleForgotSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("ForgotPassword", { email: forgotEmail });
+    setShowForgot(false);
+    setForgotEmail("");
   };
 
   return (
@@ -139,9 +148,13 @@ const LoginPage = () => {
 
                 {isLogin && (
                   <div className="text-right">
-                    <a href="#" className="text-sm text-primary hover:text-primary/80 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgot(true)}
+                      className="text-sm text-primary hover:text-primary/80 transition-colors"
+                    >
                       Forgot password?
-                    </a>
+                    </button>
                   </div>
                 )}
 
@@ -181,6 +194,62 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
+      {showForgot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md">
+            <Card className="shadow-card border-0 bg-card/80 backdrop-blur-sm relative">
+              <button
+                type="button"
+                onClick={() => setShowForgot(false)}
+                aria-label="Close"
+                className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold text-foreground">Reset password</CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Enter your email and we’ll send you a reset link.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleForgotSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="forgot-email" className="text-foreground font-medium">
+                      Email address
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="forgot-email"
+                        name="forgot-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        className="pl-10 bg-input border-border focus:ring-primary"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" variant="cloud" className="w-full text-base py-6">
+                    Send reset link
+                  </Button>
+                </form>
+              </CardContent>
+              <CardFooter className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(false)}
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  Back to sign in
+                </button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
