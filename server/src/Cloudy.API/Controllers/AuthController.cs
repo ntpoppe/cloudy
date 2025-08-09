@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Cloudy.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("auth/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;

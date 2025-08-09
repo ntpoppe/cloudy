@@ -67,10 +67,11 @@ var app = builder.Build();
 //----------------------
 // Database Migration
 //----------------------
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
-    var ctx = scope.ServiceProvider.GetRequiredService<CloudyDbContext>();
-    ctx.Database.Migrate();
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<CloudyDbContext>();
+    await db.Database.MigrateAsync();
 }
 
 //----------------------

@@ -50,6 +50,12 @@ dotnet ef database update \
   --connection "Host=localhost;Port=5433;Database=cloudy;Username=cloudy_user;Password=thiswillbechanged"
 ```
 
+### Compose up/down
+```bash
+docker compose --env-file .env.dev up -d --build
+docker compose --env-file .env.dev down
+```
+
 ```bash
 cloudy-api:
   container_name: cloudy-api
