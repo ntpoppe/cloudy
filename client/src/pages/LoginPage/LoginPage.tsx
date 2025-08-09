@@ -30,15 +30,10 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen w-screen flex overflow-hidden">
       {/* Left side - Hero Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-90"></div>
-        {/* <img 
-          src={cloudHero} 
-          alt="Cloud storage hero" 
-          className="w-full h-full object-cover"
-        /> */}
+      <div className="hidden lg:flex lg:w-1/2 h-full relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-hero"></div>
         <div className="absolute inset-0 flex items-center justify-center text-white p-12">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
@@ -53,7 +48,7 @@ const LoginPage = () => {
       </div>
 
       {/* Right side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-background">
+      <div className="flex-1 lg:w-1/2 h-full flex items-center justify-center p-6 bg-background">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center mb-8">
