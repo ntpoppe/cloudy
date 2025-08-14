@@ -2,22 +2,23 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts";
 import { Button, Input, Label, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from "@/components/ui";
-import { Cloud, Mail, Lock, Eye, EyeOff, X } from "lucide-react";
-//import cloudHero from "@/assets/cloud-hero.jpg";
+import { Cloud, Mail, Lock, Eye, EyeOff, X, User as UserIcon } from "lucide-react";
 
-const LoginPage = () => {
+const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    username: "",
     email: "",
     password: "",
     confirmPassword: ""
   });
 
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, register, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   type LocationState = { from?: { pathname?: string } } | null;
@@ -40,8 +41,8 @@ const LoginPage = () => {
     e.preventDefault();
     setError(null);
     if (!isLogin) {
-      // Registration would call a separate endpoint; omitted for brevity
-      setError("Sign up is not implemented yet.");
+      await register(formData.username, formData.email, formData.password);
+      navigate(from, { replace: true });
       return;
     }
     try {
@@ -72,7 +73,7 @@ const LoginPage = () => {
 
   return (
     <div className="h-screen w-screen flex overflow-hidden">
-      {/* Left side - Hero Image */}
+      {/* Left side - Image */}
       <div className="hidden lg:flex lg:w-1/2 h-full relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-hero"></div>
         <div className="absolute inset-0 flex items-center justify-center text-white p-12">
@@ -112,6 +113,27 @@ const LoginPage = () => {
 
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <Label htmlFor="username" className="text-foreground font-medium">
+                      Username
+                    </Label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="username"
+                        name="username"
+                        type="text"
+                        placeholder="Choose a username"
+                        value={formData.username}
+                        onChange={handleInputChange}
+                        className="pl-10 bg-input border-border focus:ring-primary"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-foreground font-medium">
                     Email address
@@ -167,13 +189,20 @@ const LoginPage = () => {
                       <Input
                         id="confirmPassword"
                         name="confirmPassword"
-                        type={showPassword ? "text" : "password"}
+                        type={showConfirmPassword ? "text" : "password"}
                         placeholder="Confirm your password"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         className="pl-10 bg-input border-border focus:ring-primary"
                         required
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -285,4 +314,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default AuthPage;

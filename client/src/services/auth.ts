@@ -16,6 +16,11 @@ export const authService = {
   async getMe(): Promise<User> {
     return await http.get<User>('/api/auth/me');
   },
+  async register(payload: { username: string; email: string; password: string }): Promise<User> {
+    const { token, user } = await http.post<AuthResponse>('/api/auth/register', payload);
+    authTokenStore.set(token);
+    return user;
+  },
 };
 
 
