@@ -4,7 +4,6 @@ import { Button } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui";
 import { Input } from "@/components/ui";
 import { Separator } from "@/components/ui";
-import { Avatar } from "@/components/ui";
 import {
   Plus,
   Folder,
@@ -25,6 +24,7 @@ import { Breadcrumb } from "@/components/breadcrumbs";
 import { SortControls } from "@/components/files/controls/SortControls";
 import { UploadButton } from "@/components/files/controls/UploadButton";
 import { ActivityRow } from "@/components/activity";
+import { UserMenu } from "@/components/layout/Topbar";
 
 // --- Types ---
 import type { FileItem } from "@/types/FileItem";
@@ -59,7 +59,6 @@ const SidebarItem: React.FC<{ icon: React.ReactNode; label: string; active?: boo
     <span>{label}</span>
   </button>
 );
-
 
 // --- Main Dashboard ---
 const Dashboard: React.FC = () => {
@@ -308,7 +307,7 @@ const Dashboard: React.FC = () => {
               <Button variant="ghost" size="icon" aria-label="Refresh" onClick={() => console.log("Refresh list")}> 
                 <RefreshCw className="h-4 w-4" />
               </Button>
-              <Avatar fallback="N" className="h-8 w-8" />
+              <UserMenu initials="N" />
             </div>
           </div>
         </header>

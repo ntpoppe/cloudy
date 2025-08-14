@@ -1,20 +1,20 @@
-import { http } from './http';
+import { http, authTokenStore } from './http';
 import type { User } from '@/types';
 
-export type LoginPayload = { email: string; password: string };
-export type AuthResponse = { user: User };
+export type LoginPayload = { usernameOrEmail: string; password: string };
+export type AuthResponse = { token: string; user: User };
 
 export const authService = {
   async login(payload: LoginPayload): Promise<User> {
-    const { user } = await http.post<AuthResponse>('/auth/login', payload);
+    const { token, user } = await http.post<AuthResponse>('/api/auth/login', payload);
+    authTokenStore.set(token);
     return user;
   },
   async logout(): Promise<void> {
-    await http.post<void>('/auth/logout');
+    authTokenStore.set(null);
   },
   async getMe(): Promise<User> {
-    const { user } = await http.get<AuthResponse>('/auth/me');
-    return user;
+    return await http.get<User>('/api/auth/me');
   },
 };
 

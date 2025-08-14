@@ -1,5 +1,24 @@
 import { config } from '@/lib/config';
 
+let authToken: string | null = null;
+
+export const authTokenStore = {
+  set(token: string | null) {
+    authToken = token;
+    if (token) {
+      localStorage.setItem('cloudy.authToken', token);
+    } else {
+      localStorage.removeItem('cloudy.authToken');
+    }
+  },
+  get(): string | null {
+    if (authToken) return authToken;
+    const stored = localStorage.getItem('cloudy.authToken');
+    authToken = stored || null;
+    return authToken;
+  }
+};
+
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 type RequestOptions = {
@@ -7,12 +26,15 @@ type RequestOptions = {
   query?: Record<string, string | number | boolean | null | undefined>;
   body?: unknown;
   signal?: AbortSignal;
-  credentials?: RequestCredentials; // defaults to 'include'
+  credentials?: RequestCredentials; // defaults to 'omit'
 };
 
 function buildUrl(path: string, query?: RequestOptions['query']): string {
   const base = config.apiBaseUrl.replace(/\/+$/, '');
-  const p = path.replace(/^\/+/, '');
+  let p = path.replace(/^\/+/, '');
+  if (!p.startsWith('api/')) {
+    p = `api/${p}`;
+  }
   const url = new URL(`${base}/${p}`);
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
@@ -32,9 +54,10 @@ async function request<T>(method: HttpMethod, path: string, options: RequestOpti
       Accept: 'application/json',
       ...(body ? { 'Content-Type': 'application/json' } : {}),
       ...(headers || {}),
+      ...(authTokenStore.get() ? { Authorization: `Bearer ${authTokenStore.get()}` } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
-    credentials: credentials ?? 'include',
+    credentials: credentials ?? 'omit',
     signal,
   };
   const res = await fetch(url, init);
@@ -80,7 +103,8 @@ async function request<T>(method: HttpMethod, path: string, options: RequestOpti
 }
 
 export const http = {
-  get: <T>(path: string, options?: RequestOptions) => request<T>('GET', path, options),
+  get: <T>(path: string, options?: RequestOptions) => 
+    request<T>('GET', path, options),
   post: <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'body'>) =>
     request<T>('POST', path, { ...(options || {}), body }),
   put: <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'body'>) =>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { authService } from '@/services/auth';
+import { authTokenStore } from '@/services/http';
 import type { User } from '@/types';
 import { AuthContext, type AuthContextValue } from './AuthContextCore';
 
@@ -11,8 +12,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isMounted = true;
     (async () => {
       try {
-        const me = await authService.getMe();
-        if (isMounted) setUser(me);
+        if (authTokenStore.get()) {
+          const me = await authService.getMe();
+          if (isMounted) setUser(me);
+        }
       } catch {
         if (isMounted) setUser(null);
       } finally {
@@ -24,10 +27,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (usernameOrEmail: string, password: string) => {
     setIsLoading(true);
     try {
-      const me = await authService.login({ email, password });
+      const me = await authService.login({ usernameOrEmail, password });
       setUser(me);
     } finally {
       setIsLoading(false);

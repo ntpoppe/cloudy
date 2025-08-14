@@ -1,5 +1,5 @@
+using System;
 using System.Text;
-using Cloudy.Application;
 using Cloudy.Infrastructure;
 using Cloudy.Infrastructure.Data;
 using Cloudy.Infrastructure.Settings;
@@ -7,12 +7,22 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using DotNetEnv;
+
+//----------------------
+// Environment as argument (local debugging without docker)
+//----------------------
+var envFile = GetArgValue(args, "--env-file");
+if (!string.IsNullOrWhiteSpace(envFile) && File.Exists(envFile))
+    Env.Load(envFile);
 
 var builder = WebApplication.CreateBuilder(args);
 
 //----------------------
 // Configuration
 //----------------------
+SetDefaultConnectionFromEnvIfExists(builder, envFile);
+
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 if (jwt == null || string.IsNullOrWhiteSpace(jwt.Key))
@@ -23,6 +33,27 @@ if (jwt == null || string.IsNullOrWhiteSpace(jwt.Key))
 //----------------------
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
+
+//----------------------
+// CORS
+//----------------------
+const string CorsPolicy = "Frontend";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:3000",
+                "http://localhost:4200"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 
 //----------------------
 // Authentication & Authorization
@@ -85,11 +116,44 @@ if (app.Environment.IsDevelopment())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// Only redirect in production because the container listens on HTTP
+// if (app.Environment.IsProduction())
+// {
+//     app.UseHttpsRedirection();
+// }
 
+app.UseRouting();
+app.UseCors(CorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+static string? GetArgValue(string[] argv, string name)
+{
+    for (int i = 0; i < argv.Length - 1; i++)
+        if (argv[i] == name) return argv[i + 1];
+    return null;
+}
+
+/// <summary>
+/// Set the default connection string from the environment variable DB_CONNSTRING
+/// This is used when docker isn't used. `dotnet run --env-file .env`
+/// </summary>
+static void SetDefaultConnectionFromEnvIfExists(WebApplicationBuilder builder, string? envFile)
+{
+    if (envFile is null) return;
+
+    builder.Configuration.AddEnvironmentVariables();
+    var existing = builder.Configuration.GetConnectionString("DefaultConnection");
+    var dbConn = builder.Configuration["DB_CONNSTRING"]
+             ?? Environment.GetEnvironmentVariable("DB_CONNSTRING");
+
+    if (string.IsNullOrWhiteSpace(existing) && !string.IsNullOrWhiteSpace(dbConn))
+    {
+        builder.Configuration["ConnectionStrings:DefaultConnection"] = dbConn;
+        Console.WriteLine("DefaultConnection set from DB_CONNSTRING");
+    }
+}

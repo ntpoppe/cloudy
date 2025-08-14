@@ -4,7 +4,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Restore each project (same layout you had)
+# Restore each project (cache-friendly)
 COPY ["src/Cloudy.API/Cloudy.API.csproj", "Cloudy.API/"]
 COPY ["src/Cloudy.Application/Cloudy.Application.csproj", "Cloudy.Application/"]
 COPY ["src/Cloudy.Infrastructure/Cloudy.Infrastructure.csproj", "Cloudy.Infrastructure/"]
@@ -13,8 +13,6 @@ RUN dotnet restore "Cloudy.API/Cloudy.API.csproj"
 
 # Copy remaining source
 COPY src .
-
-# Build (Release)
 WORKDIR "/src/Cloudy.API"
 RUN dotnet build -c Release -o /app/build
 
@@ -23,15 +21,18 @@ RUN dotnet build -c Release -o /app/build
 # =========================
 FROM build AS publish
 RUN dotnet publish -c Release -o /app/publish
+# If you want later:
+#  /p:PublishTrimmed=true /p:PublishReadyToRun=true
 
 # =========================
-# Base runtime (non-root)
+# Base runtime (idempotent non-root)
 # =========================
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
-# (optional) run as non-root
-RUN adduser --disabled-password --gecos "" app && chown -R app /app
-USER app
+# Create 'app' user if missing, and own /app
+RUN if ! id -u app >/dev/null 2>&1; then \
+      useradd -m -r -s /usr/sbin/nologin app; \
+    fi && chown -R app:app /app
 
 # =========================
 # PROD target (guarded)
@@ -39,23 +40,22 @@ USER app
 FROM base AS prod
 WORKDIR /app
 COPY --from=publish /app/publish ./
-# guard entrypoint (place file at ./ops/entrypoint-prod.sh)
 COPY ./ops/entrypoint-prod.sh /entrypoint-prod.sh
-USER root && chmod +x /entrypoint-prod.sh && chown app:app /entrypoint-prod.sh && USER app
+
+# Make entrypoint executable as root, then drop privileges
+RUN chmod +x /entrypoint-prod.sh && chown app:app /entrypoint-prod.sh
+USER app
+
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 ENTRYPOINT ["/entrypoint-prod.sh"]
 
 # =========================
-# DEV target (hot reload)
+# DEV target (build + run normally)
 # =========================
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dev
-WORKDIR /src
-# Tools if you want them available inside container
-RUN dotnet tool install --global dotnet-ef \
- && echo 'export PATH="$PATH:/root/.dotnet/tools"' >> /root/.bashrc
+FROM base AS dev
+WORKDIR /app
+COPY --from=publish /app/publish ./
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
-# source is mounted via compose; watch rebuilds
-ENTRYPOINT ["dotnet", "watch", "--project", "src/Cloudy.API/Cloudy.API.csproj", "run", "--no-restore"]
-
+ENTRYPOINT ["dotnet", "Cloudy.API.dll"]
