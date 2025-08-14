@@ -6,7 +6,7 @@ import AuthPage from './pages/AuthPage'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}>
       <AuthProvider>
         <Routes>
           <Route path="/auth" element={<AuthPage />} />

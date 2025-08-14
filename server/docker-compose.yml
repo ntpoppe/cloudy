@@ -47,6 +47,8 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ConnectionStrings__DefaultConnection: ${DB_CONNSTRING}
       PROD_GUARD: ${PROD_GUARD}
+    ports:
+      - "8000:8080"
     depends_on:
       db-prod:
         condition: service_healthy
