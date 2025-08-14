@@ -221,14 +221,7 @@ const LoginPage = () => {
           </Card>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            By continuing, you agree to our{" "}
-            <a href="#" className="text-primary hover:text-primary/80 transition-colors">
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a href="#" className="text-primary hover:text-primary/80 transition-colors">
-              Privacy Policy
-            </a>
+            By continuing, you agree to our Terms- haha just kidding
           </div>
         </div>
       </div>
