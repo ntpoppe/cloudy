@@ -7,4 +7,4 @@ if [ "${ASPNETCORE_ENVIRONMENT:-}" = "Production" ] && [ "${PROD_GUARD:-NO}" != 
   exit 42
 fi
 
-exec ./Cloudy.API.dll
+exec dotnet /app/Cloudy.API.dll

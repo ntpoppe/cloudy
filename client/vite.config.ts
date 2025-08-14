@@ -4,7 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from "node:url";
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Serve under /cloudy/ when building for production
+  base: command === 'build' ? '/cloudy/' : '/',
   plugins: [
     react(),
     tailwindcss()
@@ -14,4 +16,4 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
-})
+}))
