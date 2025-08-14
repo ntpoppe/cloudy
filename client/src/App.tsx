@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import LoginPage from './pages/LoginPage'
 import Dashboard from './pages/Dashboard'
 import { AuthProvider } from './contexts/AuthContext'
 import RequireAuth from './components/auth/RequireAuth'
+import AuthPage from './pages/AuthPage'
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth" element={<AuthPage />} />
           <Route element={<RequireAuth />}>
             <Route path="/" element={<Dashboard />} />
           </Route>

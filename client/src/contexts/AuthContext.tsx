@@ -45,6 +45,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (username: string, email: string, password: string) => {
+    try {
+      const me = await authService.register({ username, email, password });
+      setUser(me);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -52,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading,
       login,
       logout,
+      register,
     }),
     [user, isLoading]
   );
