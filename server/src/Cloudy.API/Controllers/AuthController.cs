@@ -1,6 +1,9 @@
 using Cloudy.Application.DTOs;
 using Cloudy.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Cloudy.API.Controllers;
 
@@ -17,9 +20,13 @@ public class AuthController : ControllerBase
         _jwtService = jwtService;
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<AuthenticationResponseDto>> Register(RegisterDto dto)
     {
+        // Log entry to terminal
+        Console.WriteLine("[AuthController] Register endpoint called");
+
         var user = await _userService.RegisterAsync(dto);
         var token = _jwtService.CreateToken(user.Id, user.Username);
 
@@ -27,6 +34,7 @@ public class AuthController : ControllerBase
         return Ok(new AuthenticationResponseDto(token, userDto));
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<AuthenticationResponseDto>> Login(LoginDto dto)
     {
@@ -37,5 +45,21 @@ public class AuthController : ControllerBase
         var token = _jwtService.CreateToken(user.Id, user.Username);
         var userDto = new UserDto(user.Id, user.Username, user.Email);
         return Ok(new AuthenticationResponseDto(token, userDto));
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<ActionResult<UserDto>> Me()
+    {
+        string? userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out int userId))
+            return Unauthorized();
+
+        var user = await _userService.GetByIdAsync(userId);
+        if (user is null)
+            return NotFound();
+
+        return Ok(user);
     }
 }

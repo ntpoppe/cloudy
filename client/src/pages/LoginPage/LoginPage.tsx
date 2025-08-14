@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts";
 import { Button, Input, Label, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from "@/components/ui";
 import { Cloud, Mail, Lock, Eye, EyeOff, X } from "lucide-react";
 //import cloudHero from "@/assets/cloud-hero.jpg";
@@ -8,11 +10,18 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: ""
   });
+
+  const { login, isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  type LocationState = { from?: { pathname?: string } } | null;
+  const from = ((location.state as LocationState)?.from?.pathname) || "/";
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -21,10 +30,37 @@ const LoginPage = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login/register logic here
-    console.log(isLogin ? "Login" : "Register", formData);
+    setError(null);
+    if (!isLogin) {
+      // Registration would call a separate endpoint; omitted for brevity
+      setError("Sign up is not implemented yet.");
+      return;
+    }
+    try {
+      await login(formData.email, formData.password);
+      navigate(from, { replace: true });
+    } catch (err: unknown) {
+      let message = "Failed to sign in";
+      if (err && typeof err === "object") {
+        const maybeBody = (err as { body?: unknown }).body;
+        if (maybeBody && typeof maybeBody === "object" && "message" in (maybeBody as Record<string, unknown>)) {
+          const m = (maybeBody as Record<string, unknown>).message;
+          if (typeof m === "string" && m.trim()) message = m;
+        } else if ("message" in (err as Record<string, unknown>)) {
+          const m = (err as Record<string, unknown>).message;
+          if (typeof m === "string" && m.trim()) message = m;
+        }
+      }
+      setError(message);
+    }
   };
 
   const handleForgotSubmit = (e: React.FormEvent) => {
@@ -154,12 +190,18 @@ const LoginPage = () => {
                   </div>
                 )}
 
-                <Button 
-                  type="submit" 
-                  variant="cloud" 
+                {error && (
+                  <div className="text-sm text-red-500" role="alert">
+                    {error}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  variant="cloud"
                   className="w-full text-base py-6"
+                  disabled={isLoading}
                 >
-                  {isLogin ? "Sign in" : "Create account"}
+                  {isLoading ? "Signing in..." : isLogin ? "Sign in" : "Create account"}
                 </Button>
               </form>
             </CardContent>

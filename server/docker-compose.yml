@@ -1,29 +1,80 @@
-services:
-  cloudy-db:
-    container_name: cloudy-db
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: cloudy
-      POSTGRES_USER: cloudy_user
-      POSTGRES_PASSWORD: thiswillbechanged
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+# docker-compose.yml (repo root)
+name: cloudy
 
-  cloudy-api:
-    container_name: cloudy-api
+services:
+  # ---------- DEV ----------
+  api-dev:
     build:
       context: .
       dockerfile: src/Cloudy.API/Dockerfile
-    ports:
-      - "5000:8080"
+      target: dev
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=cloudy-db;Port=5432;Database=cloudy;Username=cloudy_user;Password=thiswillbechanged
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ConnectionStrings__DefaultConnection: ${DB_CONNSTRING}
+    volumes:
+      - ./:/src
     depends_on:
-      - cloudy-db
+      db-dev:
+        condition: service_healthy
+    ports:
+      - "5170:8080"
+    profiles: ["dev"]
+
+  db-dev:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    ports:
+      - "5434:5432"   # host -> container (for PGAdmin/psql)
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    profiles: ["dev"]
+
+  # ---------- PROD ----------
+  api-prod:
+    build:
+      context: .
+      dockerfile: src/Cloudy.API/Dockerfile
+      target: prod
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ConnectionStrings__DefaultConnection: ${DB_CONNSTRING}
+      PROD_GUARD: ${PROD_GUARD}
+    depends_on:
+      db-prod:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: always
+    profiles: ["prod"]
+
+  db-prod:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    profiles: ["prod"]
 
 volumes:
-  pgdata:
+  pgdata-dev:
+  pgdata-prod:
+
 
