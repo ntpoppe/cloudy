@@ -25,7 +25,7 @@ A full-stack cloud storage solution built with modern technologies, featuring a 
   - RESTful API endpoints
   - Comprehensive test coverage
 
-### 🚧 **Work in Progress**
+### **Work in Progress**
 - **Cloud Storage Core**
   - File upload/download functionality
   - Folder creation and management
@@ -33,7 +33,7 @@ A full-stack cloud storage solution built with modern technologies, featuring a 
   - Storage quota management
   - File sharing and collaboration
 
-## 🏗️ Architecture
+##  Architecture
 
 ### **Frontend (React + TypeScript)**
 ```
