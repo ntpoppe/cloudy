@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui";
-import { useAuth } from "@/contexts";
+import { useAuth } from "@/hooks";
 import { cn } from "@/lib/utils";
 
 type Props = {

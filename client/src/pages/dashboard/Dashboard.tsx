@@ -61,7 +61,7 @@ const SidebarItem: React.FC<{ icon: React.ReactNode; label: string; active?: boo
 );
 
 // --- Main Dashboard ---
-const Dashboard: React.FC = () => {
+export const Dashboard: React.FC = () => {
   const [items, setItems] = useState<FileItem[]>(initialItems);
   const [path, setPath] = useState<string[]>([]); // array of folder ids
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -430,5 +430,3 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
-
-export default Dashboard;

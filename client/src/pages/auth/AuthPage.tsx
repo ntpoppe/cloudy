@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts";
+import { useAuth } from "@/hooks";
 import { Button, Input, Label, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from "@/components/ui";
 import { Cloud, Mail, Lock, Eye, EyeOff, X, User as UserIcon } from "lucide-react";
 
-const AuthPage = () => {
+export const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -313,5 +313,3 @@ const AuthPage = () => {
     </div>
   );
 };
-
-export default AuthPage;

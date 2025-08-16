@@ -1,10 +1,10 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts';
+import { useAuth } from '@/hooks';
 
 type Props = { children?: React.ReactNode };
 
-const RequireAuth: React.FC<Props> = ({ children }) => {
+export const RequireAuth: React.FC<Props> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
@@ -18,7 +18,3 @@ const RequireAuth: React.FC<Props> = ({ children }) => {
 
   return children ? <>{children}</> : <Outlet />;
 };
-
-export default RequireAuth;
-
-
