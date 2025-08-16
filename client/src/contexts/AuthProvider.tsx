@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { authService } from '@/services/auth';
 import { authTokenStore } from '@/services/http';
 import type { User } from '@/types';
-import { AuthContext, type AuthContextValue } from './AuthContextCore';
+import { AuthContext, type AuthContextValue } from './types';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -68,4 +68,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-

@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Dashboard from './pages/Dashboard'
-import { AuthProvider } from './contexts/AuthContext'
-import RequireAuth from './components/auth/RequireAuth'
-import AuthPage from './pages/AuthPage'
+import { Dashboard } from './pages/dashboard'
+import { AuthProvider } from './contexts/AuthProvider'
+import { RequireAuth } from './components/auth/RequireAuth'
+import { AuthPage } from './pages/auth'
 
-function App() {
+export const App = () => {
   return (
     <BrowserRouter basename={(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}>
       <AuthProvider>
@@ -19,5 +19,3 @@ function App() {
     </BrowserRouter>
   )
 }
-
-export default App
