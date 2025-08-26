@@ -1,7 +1,6 @@
 using Cloudy.Application.Interfaces;
 using Cloudy.Domain.Entities;
 using Cloudy.Infrastructure.Data;
-//using Cloudy.Infrastructure.FileStorage;
 using Cloudy.Infrastructure.Repositories;
 using Cloudy.Infrastructure.Services;
 using Cloudy.Infrastructure.Settings;
@@ -9,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Minio;
 
 namespace Cloudy.Infrastructure;
 
@@ -34,8 +34,15 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
-        // File storage
-        // services.AddSingleton<IFileStorage, LocalFileStorage>();
+        // MinIO
+        var minioSection = config.GetSection("Minio");
+        services.AddMinio(cfg => cfg
+            .WithEndpoint(Environment.GetEnvironmentVariable("MINIO_ENDPOINT"))
+            .WithCredentials(
+                Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY"),
+                Environment.GetEnvironmentVariable("MINIO_SECRET_KEY"))
+            .Build());
+        services.AddScoped<IBlobStore, MinioBlobStore>();
 
         // Jwt
         services.Configure<JwtSettings>(config.GetSection("Jwt"));
