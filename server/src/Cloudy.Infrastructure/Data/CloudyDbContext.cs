@@ -14,17 +14,7 @@ public class CloudyDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        // Map File.Metadata as an owned/value object
-        builder.Entity<Domain.Entities.File>().OwnsOne(f => f.Metadata, m =>
-        {
-            m.Property(p => p.ContentType).HasColumnName("ContentType");
-            m.Property(p => p.UploadedAt).HasColumnName("UploadedAt");
-        });
-
-        // Soft-delete filters (exclude IsDeleted = true)
-        builder.Entity<Domain.Entities.File>()
-               .HasQueryFilter(f => !f.IsDeleted);
-        builder.Entity<Folder>()
-               .HasQueryFilter(f => !f.IsDeleted);
+        // Apply configurations from assembly
+        builder.ApplyConfigurationsFromAssembly(typeof(CloudyDbContext).Assembly);
     }
 }

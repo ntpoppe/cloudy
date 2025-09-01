@@ -24,9 +24,9 @@ public class UserServiceTests
     {
         // Arrange
         var dto = new RegisterDto("alice", "alice@example.com", "pw123");
-        _repoMock.Setup(r => r.GetByEmailAsync(dto.Email)).ReturnsAsync((User?)null);
+        _repoMock.Setup(r => r.GetByEmailAsync(dto.Email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
         _hasherMock.Setup(h => h.HashPassword(It.IsAny<User>(), dto.Password)).Returns("hashedpw");
-        _repoMock.Setup(r => r.AddAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _repoMock.Setup(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var service = CreateService();
 
@@ -36,7 +36,7 @@ public class UserServiceTests
         // Assert
         result.Should().NotBeNull();
         result.Username.Should().Be(dto.Username);
-        _repoMock.Verify(r => r.AddAsync(It.Is<User>(u => u.Email == dto.Email && u.PasswordHash == "hashedpw")), Times.Once);
+        _repoMock.Verify(r => r.AddAsync(It.Is<User>(u => u.Email == dto.Email && u.PasswordHash == "hashedpw"), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class UserServiceTests
     {
         // Arrange
         var dto = new RegisterDto("bob", "bob@example.com", "pw");
-        _repoMock.Setup(r => r.GetByEmailAsync(dto.Email)).ReturnsAsync(new User("bob", "hash", "bob@example.com"));
+        _repoMock.Setup(r => r.GetByEmailAsync(dto.Email, It.IsAny<CancellationToken>())).ReturnsAsync(new User("bob", "hash", "bob@example.com"));
         var service = CreateService();
 
         // Act
@@ -52,7 +52,7 @@ public class UserServiceTests
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Email already in use*");
-        _repoMock.Verify(r => r.AddAsync(It.IsAny<User>()), Times.Never);
+        _repoMock.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class UserServiceTests
         // Arrange
         var dto = new LoginDto("eve", "pw");
         var user = new User("eve", "hashed", "eve@example.com");
-        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail)).ReturnsAsync(user);
+        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         _hasherMock.Setup(h => h.VerifyHashedPassword(user, user.PasswordHash, dto.Password))
                    .Returns(PasswordVerificationResult.Success);
 
@@ -80,7 +80,7 @@ public class UserServiceTests
     {
         // Arrange
         var dto = new LoginDto("notfound", "pw");
-        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail)).ReturnsAsync((User?)null);
+        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
         var service = CreateService();
 
         // Act
@@ -96,7 +96,7 @@ public class UserServiceTests
         // Arrange
         var dto = new LoginDto("frank", "wrongpw");
         var user = new User("frank", "hashed", "frank@example.com");
-        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail)).ReturnsAsync(user);
+        _repoMock.Setup(r => r.GetByUsernameOrEmailAsync(dto.UsernameOrEmail, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         _hasherMock.Setup(h => h.VerifyHashedPassword(user, user.PasswordHash, dto.Password))
                    .Returns(PasswordVerificationResult.Failed);
 
@@ -115,7 +115,7 @@ public class UserServiceTests
         // Arrange
         var user = new User("gina", "hash", "gina@example.com");
         typeof(User).GetProperty("Id")!.SetValue(user, 42); // ew
-        _repoMock.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _repoMock.Setup(r => r.GetByIdAsync(user.Id, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         var service = CreateService();
 
         // Act
@@ -130,7 +130,7 @@ public class UserServiceTests
     public async Task GetByIdAsync_Should_Return_Null_If_User_Not_Found()
     {
         // Arrange
-        _repoMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((User?)null);
+        _repoMock.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
         var service = CreateService();
 
         // Act

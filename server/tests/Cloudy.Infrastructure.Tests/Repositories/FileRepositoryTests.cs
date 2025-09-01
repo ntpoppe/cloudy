@@ -19,7 +19,7 @@ public class FileRepositoryTests
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
         var metadata = new FileMetadata("text/plain", DateTime.UtcNow);
-        var file = new CloudyFile("hello.txt", 12, metadata);
+        var file = new CloudyFile("hello.txt", 12, metadata, 1);
 
         await repo.AddAsync(file);
         await ctx.SaveChangesAsync();
@@ -27,6 +27,7 @@ public class FileRepositoryTests
         var fetched = await ctx.Files.SingleAsync();
         fetched.Name.Should().Be("hello.txt");
         fetched.Metadata.ContentType.Should().Be("text/plain");
+        fetched.UserId.Should().Be(1);
     }
 
     [Fact]
@@ -34,7 +35,7 @@ public class FileRepositoryTests
     {
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
-        var file = new CloudyFile("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow));
+        var file = new CloudyFile("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow), 1);
         await repo.AddAsync(file);
         await ctx.SaveChangesAsync();
 
@@ -59,7 +60,7 @@ public class FileRepositoryTests
     {
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
-        var file = new CloudyFile("old.txt", 3, new FileMetadata("text/plain", DateTime.UtcNow));
+        var file = new CloudyFile("old.txt", 3, new FileMetadata("text/plain", DateTime.UtcNow), 1);
         await repo.AddAsync(file);
         await ctx.SaveChangesAsync();
 
@@ -77,8 +78,8 @@ public class FileRepositoryTests
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
 
-        var keep = new CloudyFile("keep.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow));
-        var del  = new CloudyFile("del.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow));
+        var keep = new CloudyFile("keep.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var del  = new CloudyFile("del.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow), 1);
         del.SoftDelete();
 
         await repo.AddAsync(keep);
@@ -87,5 +88,25 @@ public class FileRepositoryTests
 
         var all = await ctx.Files.ToListAsync();
         all.Should().ContainSingle(f => f.Name == "keep.txt");
+    }
+
+    [Fact]
+    public async Task GetByUserIdAsync_Should_Return_Only_User_Files()
+    {
+        var ctx = GetContext();
+        var repo = new FileRepository(ctx);
+
+        var user1File = new CloudyFile("user1.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var user2File = new CloudyFile("user2.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow), 2);
+
+        await repo.AddAsync(user1File);
+        await repo.AddAsync(user2File);
+        await ctx.SaveChangesAsync();
+
+        var user1Files = await repo.GetByUserIdAsync(1);
+        user1Files.Should().ContainSingle(f => f.Name == "user1.txt");
+
+        var user2Files = await repo.GetByUserIdAsync(2);
+        user2Files.Should().ContainSingle(f => f.Name == "user2.txt");
     }
 }

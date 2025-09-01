@@ -28,6 +28,16 @@ var jwt = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 if (jwt == null || string.IsNullOrWhiteSpace(jwt.Key))
     throw new InvalidOperationException("Missing or invalid JWT configuration.");
 
+// MinIO configuration check
+var minioSection = builder.Configuration.GetSection("MINIO");
+var minioEndpoint = minioSection["Endpoint"];
+var minioAccessKey = minioSection["AccessKey"];
+var minioSecretKey = minioSection["SecretKey"];
+if (string.IsNullOrWhiteSpace(minioEndpoint))
+    throw new InvalidOperationException("MinIO endpoint missing (Minio:Endpoint). Check your --env-file and keys.");
+if (string.IsNullOrWhiteSpace(minioAccessKey) || string.IsNullOrWhiteSpace(minioSecretKey))
+    throw new InvalidOperationException("MinIO credentials missing (Minio:AccessKey/SecretKey).");
+
 //----------------------
 // Service Registration
 //----------------------

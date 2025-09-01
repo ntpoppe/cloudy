@@ -18,14 +18,14 @@ public class FolderServiceTests
     {
         // Arrange
         var sut = CreateSut();
-        _uow.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
+        _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         // Act
         var dto = await sut.CreateAsync("Root");
 
         // Assert
-        _folderRepo.Verify(r => r.AddAsync(It.IsAny<Folder>()), Times.Once);
-        _uow.Verify(u => u.SaveChangesAsync(), Times.Once);
+        _folderRepo.Verify(r => r.AddAsync(It.IsAny<Folder>(), It.IsAny<CancellationToken>()), Times.Once);
+        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         dto.Name.Should().Be("Root");
     }
 
@@ -35,7 +35,7 @@ public class FolderServiceTests
         // Arrange
         var parent = new Folder("P");
         var kids = new[] { new Folder("A", parent.Id), new Folder("B", parent.Id) };
-        _folderRepo.Setup(r => r.ListByParentAsync(parent.Id))
+        _folderRepo.Setup(r => r.ListByParentAsync(parent.Id, It.IsAny<CancellationToken>()))
                    .ReturnsAsync(kids);
         var sut = CreateSut();
 

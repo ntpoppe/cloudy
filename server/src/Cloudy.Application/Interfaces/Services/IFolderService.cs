@@ -4,9 +4,9 @@ namespace Cloudy.Application.Interfaces;
 
 public interface IFolderService
 {
-    Task<FolderDto> CreateAsync(string name, int? parentFolderId = null);
-    Task<FolderDto> GetByIdAsync(int id);
-    Task RenameAsync(int id, string newName);
-    Task DeleteAsync(int id);
-    Task<IEnumerable<FolderDto>> ListAsync(int parentFolderId);
+    Task<FolderDto> CreateAsync(string name, int? parentFolderId = null, CancellationToken cancellationToken = default);
+    Task<FolderDto> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task RenameAsync(int id, string newName, CancellationToken cancellationToken = default);
+    Task DeleteAsync(int id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<FolderDto>> ListAsync(int parentFolderId, CancellationToken cancellationToken = default);
 }

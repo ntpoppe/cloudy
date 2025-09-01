@@ -60,3 +60,5 @@ logs
 .vscode/
 .env*
 .idea/
+Cloudy.sln.DotSettings.user
+.targets

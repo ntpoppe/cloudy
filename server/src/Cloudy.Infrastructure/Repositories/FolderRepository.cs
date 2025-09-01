@@ -12,15 +12,15 @@ public class FolderRepository : IFolderRepository
     public FolderRepository(CloudyDbContext context)
         => _context = context;
 
-    public async Task<Folder?> GetByIdAsync(int id)
-        => await _context.Folders.FirstOrDefaultAsync(f => f.Id == id);
+    public async Task<Folder?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        => await _context.Folders.FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
 
-    public async Task AddAsync(Folder folder)
-        => await _context.Folders.AddAsync(folder);
+    public async Task AddAsync(Folder folder, CancellationToken cancellationToken = default)
+        => await _context.Folders.AddAsync(folder, cancellationToken);
     
-    public void Update(Folder folder)
+    public void Update(Folder folder, CancellationToken cancellationToken = default)
         => _context.Folders.Update(folder);
 
-    public async Task<IEnumerable<Folder>> ListByParentAsync(int parentFolderId)
-        => await _context.Folders.Where(f => f.ParentFolderId == parentFolderId).ToListAsync();
+    public async Task<IEnumerable<Folder>> ListByParentAsync(int parentFolderId, CancellationToken cancellationToken = default)
+        => await _context.Folders.Where(f => f.ParentFolderId == parentFolderId).ToListAsync(cancellationToken);
 }

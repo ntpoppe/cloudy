@@ -5,5 +5,7 @@ public record FileDto(
     string Name,
     long Size,
     string ContentType,
-    DateTime UploadedAt
+    DateTime UploadedAt,
+    string Bucket,
+    string ObjectKey
 );
