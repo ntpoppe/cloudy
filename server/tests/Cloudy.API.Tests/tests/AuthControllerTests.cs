@@ -24,7 +24,7 @@ public class AuthControllerTests
         var userDto = new UserDto(1, "testuser", "test@example.com");
 
         _userService
-            .Setup(s => s.RegisterAsync(dto))
+            .Setup(s => s.RegisterAsync(dto, It.IsAny<CancellationToken>()))
             .ReturnsAsync(userDto);
 
         _jwtService
@@ -32,7 +32,7 @@ public class AuthControllerTests
             .Returns("expected-token");
 
         // Act
-        var actionResult = await _controller.Register(dto);
+        var actionResult = await _controller.RegisterAsync(dto);
 
         // Assert
         var result = Assert.IsType<ActionResult<AuthenticationResponseDto>>(actionResult);
@@ -41,7 +41,7 @@ public class AuthControllerTests
 
         Assert.Equal("expected-token", response.Token);
 
-        _userService.Verify(s => s.RegisterAsync(dto), Times.Once);
+        _userService.Verify(s => s.RegisterAsync(dto, It.IsAny<CancellationToken>()), Times.Once);
         _jwtService.Verify(s => s.CreateToken(userDto.Id, userDto.Username), Times.Once);
     }
 }

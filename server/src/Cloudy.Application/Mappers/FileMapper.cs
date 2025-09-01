@@ -1,4 +1,3 @@
-using Cloudy.Domain.Entities;
 using Cloudy.Application.DTOs;
 
 namespace Cloudy.Application.Mappers;
@@ -11,6 +10,8 @@ public static class FileMapper
             file.Name,
             file.Size,
             file.Metadata.ContentType,
-            file.Metadata.UploadedAt
+            file.Metadata.UploadedAt,
+            file.Bucket,
+            file.ObjectKey
         );
 }

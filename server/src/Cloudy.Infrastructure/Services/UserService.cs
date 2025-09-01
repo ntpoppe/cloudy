@@ -16,22 +16,22 @@ public class UserService : IUserService
         _hasher = hasher;
     }
 
-    public async Task<UserDto> RegisterAsync(RegisterDto dto)
+    public async Task<UserDto> RegisterAsync(RegisterDto dto, CancellationToken cancellationToken = default)
     {
-        if (await _repo.GetByEmailAsync(dto.Email) is not null)
+        if (await _repo.GetByEmailAsync(dto.Email, cancellationToken) is not null)
             throw new InvalidOperationException("Email already in use.");
 
         var temp = new User(dto.Username, passwordHash: "", dto.Email);
         var hash = _hasher.HashPassword(temp, dto.Password);
         var user = new User(dto.Username, hash, dto.Email);
 
-        await _repo.AddAsync(user);
+        await _repo.AddAsync(user, cancellationToken);
         return new UserDto(user.Id, user.Username, user.Email);
     }
 
-    public async Task<UserDto?> AuthenticateAsync(LoginDto dto)
+    public async Task<UserDto?> AuthenticateAsync(LoginDto dto, CancellationToken cancellationToken = default)
     {
-        var user = await _repo.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
+        var user = await _repo.GetByUsernameOrEmailAsync(dto.UsernameOrEmail, cancellationToken);
         if (user is null) return null;
 
         var ok = _hasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
@@ -40,9 +40,9 @@ public class UserService : IUserService
         return new UserDto(user.Id, user.Username, user.Email);
     }
 
-    public async Task<UserDto?> GetByIdAsync(int id)
+    public async Task<UserDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var user = await _repo.GetByIdAsync(id);
+        var user = await _repo.GetByIdAsync(id, cancellationToken);
         return user is null
             ? null
             : new UserDto(user.Id, user.Username, user.Email);

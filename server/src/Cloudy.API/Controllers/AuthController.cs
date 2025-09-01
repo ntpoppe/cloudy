@@ -22,7 +22,7 @@ public class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("register")]
-    public async Task<ActionResult<AuthenticationResponseDto>> Register(RegisterDto dto)
+    public async Task<ActionResult<AuthenticationResponseDto>> RegisterAsync(RegisterDto dto)
     {
         // Log entry to terminal
         Console.WriteLine("[AuthController] Register endpoint called");
@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<AuthenticationResponseDto>> Login(LoginDto dto)
+    public async Task<ActionResult<AuthenticationResponseDto>> LoginAsync(LoginDto dto)
     {
         var user = await _userService.AuthenticateAsync(dto);
         if (user is null)
@@ -49,7 +49,7 @@ public class AuthController : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<ActionResult<UserDto>> Me()
+    public async Task<ActionResult<UserDto>> MeAsync()
     {
         string? userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
             ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

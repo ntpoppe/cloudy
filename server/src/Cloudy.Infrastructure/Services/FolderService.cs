@@ -16,48 +16,48 @@ public class FolderService : IFolderService
         _uow = uow;
     }
 
-    public async Task<FolderDto> CreateAsync(string name, int? parentFolderId = null)
+    public async Task<FolderDto> CreateAsync(string name, int? parentFolderId = null, CancellationToken cancellationToken = default)
     {
         var folder = new Folder(name, parentFolderId);
-        await _folderRepo.AddAsync(folder);
-        await _uow.SaveChangesAsync();
+        await _folderRepo.AddAsync(folder, cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
         return FolderMapper.MapDto(folder);
     }
 
-    public async Task<FolderDto> GetByIdAsync(int id)
+    public async Task<FolderDto> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var folder = await _folderRepo.GetByIdAsync(id);
+        var folder = await _folderRepo.GetByIdAsync(id, cancellationToken);
         if (folder == null)
             throw new InvalidOperationException("'folder' null in FolderService.GetByIdAsync");
 
         return FolderMapper.MapDto(folder);
     }
 
-    public async Task RenameAsync(int id, string name)
+    public async Task RenameAsync(int id, string name, CancellationToken cancellationToken = default)
     {
-        var folder = await _folderRepo.GetByIdAsync(id);
+        var folder = await _folderRepo.GetByIdAsync(id, cancellationToken);
         if (folder == null)
             throw new InvalidOperationException("'folder' null in FolderService.RenameAsync");
         
         folder.Rename(name);
-        _folderRepo.Update(folder);
-        await _uow.SaveChangesAsync();
+        _folderRepo.Update(folder, cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var folder = await _folderRepo.GetByIdAsync(id);
+        var folder = await _folderRepo.GetByIdAsync(id, cancellationToken);
         if (folder == null)
             throw new InvalidOperationException("'folder' null in FolderService.DeleteAsync");
 
         folder.SoftDelete();
-        _folderRepo.Update(folder);
-        await _uow.SaveChangesAsync();
+        _folderRepo.Update(folder, cancellationToken);
+        await _uow.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<FolderDto>> ListAsync(int parentFolderId)
+    public async Task<IEnumerable<FolderDto>> ListAsync(int parentFolderId, CancellationToken cancellationToken = default)
     {
-        var folders = await _folderRepo.ListByParentAsync(parentFolderId);
+        var folders = await _folderRepo.ListByParentAsync(parentFolderId, cancellationToken);
         if (folders == null)
             throw new InvalidOperationException("'folders' null in FolderService.ListAsync");
 

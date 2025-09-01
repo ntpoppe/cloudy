@@ -12,14 +12,16 @@ public class FileTests
     {
         // Arrange
         var metadata = new FileMetadata("image/png", DateTime.UtcNow);
+        var userId = 1;
 
         // Act
-        var file = new CloudyFile("pic.png", 123, metadata);
+        var file = new CloudyFile("pic.png", 123, metadata, userId);
 
         // Assert
         file.Name.Should().Be("pic.png");
         file.Size.Should().Be(123);
         file.Metadata.Should().Be(metadata);
+        file.UserId.Should().Be(userId);
         file.IsDeleted.Should().BeFalse();
     }
 
@@ -27,7 +29,7 @@ public class FileTests
     public void Rename_ValidName_Should_UpdateName()
     {
         // Arrange
-        var file = new CloudyFile("old.txt", 10, new FileMetadata("text/plain", DateTime.UtcNow));
+        var file = new CloudyFile("old.txt", 10, new FileMetadata("text/plain", DateTime.UtcNow), 1);
         var newName = "new.txt";
 
         // Act
@@ -44,7 +46,7 @@ public class FileTests
     public void Rename_InvalidName_Should_Throw(string? badName)
     {
         // Arrange
-        var file = new CloudyFile("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow));
+        var file = new CloudyFile("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow), 1);
 
         // Act
         Action act = () => file.Rename(badName);
@@ -58,7 +60,7 @@ public class FileTests
     public void SoftDelete_Should_Set_Flags()
     {
         // Arrange
-        var file = new CloudyFile("t.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow));
+        var file = new CloudyFile("t.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
 
         // Act
         file.SoftDelete();

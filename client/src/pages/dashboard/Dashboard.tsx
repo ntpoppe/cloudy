@@ -15,7 +15,6 @@ import {
   Download,
   RefreshCw,
   Pencil,
-  MoveRight,
 } from "lucide-react";
 import { formatBytes } from "@/lib/format";
 import { GridView } from "@/components/files/views/GridView";
@@ -25,25 +24,11 @@ import { SortControls } from "@/components/files/controls/SortControls";
 import { UploadButton } from "@/components/files/controls/UploadButton";
 import { ActivityRow } from "@/components/activity";
 import { UserMenu } from "@/components/layout/Topbar";
+import { fileService } from "@/services/files";
 
 // --- Types ---
 import type { FileItem } from "@/types/FileItem";
 import type { ActivityItem } from "@/types/ActivityItem";
-
-// utils moved to @/lib/format
-
-// --- Demo Data ---
-const initialItems: FileItem[] = [
-  { id: "f1", name: "Projects", type: "folder", size: 0, updatedAt: new Date().toISOString(), parentId: null },
-  { id: "f2", name: "Photos", type: "folder", size: 0, updatedAt: new Date().toISOString(), parentId: null },
-  { id: "a1", name: "resume.pdf", type: "file", size: 345678, updatedAt: new Date().toISOString(), parentId: null, extension: "pdf" },
-  { id: "a2", name: "notes.txt", type: "file", size: 2345, updatedAt: new Date().toISOString(), parentId: null, extension: "txt" },
-];
-
-const demoActivities: ActivityItem[] = [
-  { id: "ac1", message: "Uploaded file resume.pdf", createdAt: new Date().toISOString() },
-  { id: "ac2", message: "Renamed folder Projects → Side Projects", createdAt: new Date().toISOString() },
-];
 
 // --- Sidebar ---
 const SidebarItem: React.FC<{ icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }>
@@ -62,7 +47,7 @@ const SidebarItem: React.FC<{ icon: React.ReactNode; label: string; active?: boo
 
 // --- Main Dashboard ---
 export const Dashboard: React.FC = () => {
-  const [items, setItems] = useState<FileItem[]>(initialItems);
+  const [items, setItems] = useState<FileItem[]>([]);
   const [path, setPath] = useState<string[]>([]); // array of folder ids
   const [view, setView] = useState<"grid" | "list">("grid");
   const [query, setQuery] = useState("");
@@ -71,14 +56,24 @@ export const Dashboard: React.FC = () => {
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
-  const [activities, setActivities] = useState<ActivityItem[]>(demoActivities);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [usedBytes, setUsedBytes] = useState(345678 + 2345);
+  const [viewMode, setViewMode] = useState<"files" | "trash">("files");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const dropRef = useRef<HTMLDivElement | null>(null);
 
   const currentFolderId = path[path.length - 1] ?? null;
 
   const currentItems = useMemo(() => {
-    let list = items.filter((it) => it.parentId === currentFolderId && !it.trashed);
+    let list = items.filter((it) => {
+      if (viewMode === "trash") {
+        // In trash view, show only trashed files from root
+        return it.trashed && it.parentId === null;
+      } else {
+        // In files view, show only non-trashed files in current folder
+        return it.parentId === currentFolderId && !it.trashed;
+      }
+    });
     // search
     if (query.trim()) {
       const q = query.toLowerCase();
@@ -93,7 +88,7 @@ export const Dashboard: React.FC = () => {
       return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * dirMul;
     });
     return list;
-  }, [items, currentFolderId, query, sortBy, sortDir]);
+  }, [items, currentFolderId, query, sortBy, sortDir, viewMode]);
 
   function openItem(item: FileItem) {
     if (item.type === "folder") {
@@ -171,38 +166,174 @@ export const Dashboard: React.FC = () => {
     setActivities((a) => [{ id: `ac_${Date.now()}`, message: `Created folder ${folder.name}`, createdAt: new Date().toISOString() }, ...a]);
   }
 
-  const onUpload = React.useCallback((files: FileList | null) => {
+  const onUpload = React.useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    let total = 0;
-    const newOnes: FileItem[] = [];
-    Array.from(files).forEach((f) => {
-      const id = `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      const ext = f.name.split(".").pop()?.toLowerCase();
-      const item: FileItem = {
-        id,
-        name: f.name,
-        type: "file",
-        size: f.size,
-        updatedAt: new Date().toISOString(),
-        parentId: currentFolderId,
-        extension: ext,
-      };
-      newOnes.push(item);
-      total += f.size;
-    });
-    setItems((arr) => [...newOnes, ...arr]);
-    setUsedBytes((b) => b + total);
-    setActivities((a) => [{ id: `ac_${Date.now()}`, message: `Uploaded ${newOnes.length} file(s)`, createdAt: new Date().toISOString() }, ...a]);
-    console.log("Upload", newOnes);
+    
+    try {
+      for (const file of Array.from(files)) {
+        // Create upload intent (get presigned URL)
+        const { uploadUrl, fileId } = await fileService.createUploadIntent({
+          fileName: file.name,
+          contentType: file.type,
+          sizeBytes: file.size
+        });
+        
+        // Upload file directly to MinIO using presigned URL
+        await fileService.uploadToMinio(uploadUrl, file);
+        
+        // Finalize the upload (save metadata to database)
+        const newItem = await fileService.finalizeUpload(fileId, {
+          objectKey: fileId,
+          originalName: file.name,
+          contentType: file.type,
+          sizeBytes: file.size
+        });
+
+        // Update parentId for the new item
+        newItem.parentId = currentFolderId;
+        
+        setItems((arr) => [newItem, ...arr]);
+        setUsedBytes((b) => b + newItem.size);
+        setActivities((a) => [{ 
+          id: `ac_${Date.now()}`, 
+          message: `Uploaded ${file.name}`, 
+          createdAt: new Date().toISOString() 
+        }, ...a]);
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setActivities((a) => [{ 
+        id: `ac_${Date.now()}`, 
+        message: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        createdAt: new Date().toISOString() 
+      }, ...a]);
+    }
   }, [currentFolderId]);
 
-  function removeSelected(toTrash = true) {
+  const downloadSelected = React.useCallback(async () => {
     if (selection.size === 0) return;
+    
+    try {
+      const selectedItems = items.filter(item => selection.has(item.id) && item.type === "file");
+      
+      for (const item of selectedItems) {
+        try {
+          // Get download URL from API
+          const downloadUrl = await fileService.getDownloadUrl(item.id);
+          
+          // Fetch the file content
+          const response = await fetch(downloadUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          // Get the file as a blob
+          const blob = await response.blob();
+          
+          // Create a blob URL and trigger download
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = item.name;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Clean up the blob URL
+          URL.revokeObjectURL(blobUrl);
+          
+          // Add activity for successful download
+          setActivities((a) => [{ 
+            id: `ac_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, 
+            message: `Downloaded ${item.name}`, 
+            createdAt: new Date().toISOString() 
+          }, ...a]);
+          
+          // Small delay between downloads to avoid overwhelming the browser
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (error) {
+          console.error(`Failed to download ${item.name}:`, error);
+          setActivities((a) => [{ 
+            id: `ac_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, 
+            message: `Failed to download ${item.name}`, 
+            createdAt: new Date().toISOString() 
+          }, ...a]);
+        }
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      setActivities((a) => [{ 
+        id: `ac_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, 
+        message: `Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        createdAt: new Date().toISOString() 
+      }, ...a]);
+    }
+  }, [selection, items]);
+
+  async function removeSelected(toTrash = true) {
+    if (selection.size === 0) return;
+
+    const selectedItems = items.filter(item => selection.has(item.id) && item.type === "file");
+
+    // If permanently deleting, show confirmation
+    if (!toTrash) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+
+    // Soft delete (move to trash)
+    const deletedSize = selectedItems.reduce((total, item) => total + item.size, 0);
     setItems((arr) =>
-      arr.map((it) => (selection.has(it.id) ? { ...it, trashed: toTrash } : it))
+      arr.map((it) => (selection.has(it.id) ? { ...it, trashed: true } : it))
     );
+    setUsedBytes((bytes) => bytes - deletedSize);
     setSelection(new Set());
-    setActivities((a) => [{ id: `ac_${Date.now()}`, message: `${toTrash ? "Moved to Trash" : "Deleted"} ${selection.size} item(s)`, createdAt: new Date().toISOString() }, ...a]);
+
+    setActivities((a) => [{
+      id: `ac_${Date.now()}`,
+      message: `Moved to Trash ${selectedItems.length} file(s)`,
+      createdAt: new Date().toISOString()
+    }, ...a]);
+  }
+
+  // Handle permanent deletion after confirmation
+  async function confirmDelete() {
+    const selectedItems = items.filter(item => selection.has(item.id) && item.type === "file");
+
+    try {
+      for (const item of selectedItems) {
+        await fileService.delete(item.id);
+        setActivities((a) => [{
+          id: `ac_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          message: `Permanently deleted ${item.name}`,
+          createdAt: new Date().toISOString()
+        }, ...a]);
+      }
+
+      // Remove items from state (hard delete)
+      setItems((arr) => arr.filter((it) => !selection.has(it.id)));
+      const deletedSize = selectedItems.reduce((total, item) => total + item.size, 0);
+      setUsedBytes((bytes) => bytes - deletedSize);
+      setSelection(new Set());
+
+      setActivities((a) => [{
+        id: `ac_${Date.now()}`,
+        message: `Permanently deleted ${selectedItems.length} file(s)`,
+        createdAt: new Date().toISOString()
+      }, ...a]);
+
+    } catch (error) {
+      console.error('Delete failed:', error);
+      setActivities((a) => [{
+        id: `ac_${Date.now()}`,
+        message: `Failed to delete ${selectedItems.length} file(s): ${error instanceof Error ? error.message : 'Unknown error'}`,
+        createdAt: new Date().toISOString()
+      }, ...a]);
+    }
+
+    setShowDeleteConfirm(false);
   }
 
   function restoreSelected() {
@@ -214,6 +345,7 @@ export const Dashboard: React.FC = () => {
 
   function goToRoot() {
     setPath([]);
+    setViewMode("files"); // Switch back to files view when going to root
     setSelection(new Set());
   }
 
@@ -243,8 +375,40 @@ export const Dashboard: React.FC = () => {
     };
   }, [onUpload]);
 
+  // Load all files on component mount
+  React.useEffect(() => {
+    const loadFiles = async () => {
+      try {
+        console.log("Loading files");
+        const files = await fileService.getAll();
+        console.log("Files loaded", files);
+        setItems(files);
+        
+        // Calculate total used bytes
+        const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+        setUsedBytes(totalBytes);
+        
+        setActivities((a) => [{ 
+          id: `ac_${Date.now()}`, 
+          message: `Loaded ${files.length} file(s)`, 
+          createdAt: new Date().toISOString() 
+        }, ...a]);
+        console.log("Files loaded");
+      } catch (error) {
+        console.error('Failed to load files:', error);
+        setActivities((a) => [{ 
+          id: `ac_${Date.now()}`, 
+          message: `Failed to load files: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+          createdAt: new Date().toISOString() 
+        }, ...a]);
+      }
+    };
+
+    loadFiles();
+  }, []);
+
   const used = usedBytes;
-  const total = 20 * 1024 * 1024 * 1024; // 20 GB demo
+  const total = 0.05 * 1024 * 1024 * 1024; // 0.05 GB demo
   const usedPct = Math.min(100, Math.round((used / total) * 100));
 
   return (
@@ -256,9 +420,23 @@ export const Dashboard: React.FC = () => {
           <span className="font-semibold tracking-tight">Cloudy</span>
         </div>
         <nav className="p-3 space-y-1">
-          <SidebarItem icon={<Folder className="h-4 w-4" />} label="My Files" active onClick={goToRoot} />
-          <SidebarItem icon={<MoveRight className="h-4 w-4" />} label="Shared" />
-          <SidebarItem icon={<Trash2 className="h-4 w-4" />} label="Trash" onClick={() => console.log("Open Trash")}/>
+          <SidebarItem
+            icon={<Folder className="h-4 w-4" />}
+            label="My Files"
+            active={viewMode === "files"}
+            onClick={goToRoot}
+          />
+          {/* <SidebarItem icon={<MoveRight className="h-4 w-4" />} label="Shared" /> */}
+          <SidebarItem
+            icon={<Trash2 className="h-4 w-4" />}
+            label="Trash"
+            active={viewMode === "trash"}
+            onClick={() => {
+              setViewMode("trash");
+              setPath([]); // Go to root when opening trash
+              setSelection(new Set());
+            }}
+          />
           <Separator className="my-3" />
           <SidebarItem icon={<Pencil className="h-4 w-4" />} label="Settings" />
         </nav>
@@ -278,7 +456,7 @@ export const Dashboard: React.FC = () => {
         {/* Top bar */}
         <header className="h-16 border-b flex items-center gap-3 px-3 sm:px-4">
           <Breadcrumb
-            rootLabel="My Files"
+            rootLabel={viewMode === "trash" ? "Trash" : "My Files"}
             path={path}
             items={items}
             onRoot={goToRoot}
@@ -304,7 +482,26 @@ export const Dashboard: React.FC = () => {
               <Plus className="h-4 w-4 mr-1" /> New folder
             </Button>
             <div className="ml-2 flex items-center gap-2">
-              <Button variant="ghost" size="icon" aria-label="Refresh" onClick={() => console.log("Refresh list")}> 
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                aria-label="Refresh" 
+                onClick={async () => {
+                  try {
+                    const files = await fileService.getAll();
+                    setItems(files);
+                    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+                    setUsedBytes(totalBytes);
+                    setActivities((a) => [{ 
+                      id: `ac_${Date.now()}`, 
+                      message: `Refreshed file list`, 
+                      createdAt: new Date().toISOString() 
+                    }, ...a]);
+                  } catch (error) {
+                    console.error('Failed to refresh files:', error);
+                  }
+                }}
+              > 
                 <RefreshCw className="h-4 w-4" />
               </Button>
               <UserMenu initials="N" />
@@ -348,13 +545,25 @@ export const Dashboard: React.FC = () => {
           )}
           {selection.size > 0 && (
             <div className="ml-auto flex items-center gap-2">
-              <Button size="sm" variant="destructive" onClick={() => removeSelected(true)}>
-                <Trash2 className="h-4 w-4 mr-1" /> Trash
-              </Button>
-              <Button size="sm" variant="outline" onClick={restoreSelected}>Restore</Button>
-              <Button size="sm" variant="outline" onClick={() => console.log("Download", Array.from(selection))}>
-                <Download className="h-4 w-4 mr-1" /> Download
-              </Button>
+              {viewMode === "trash" ? (
+                <>
+                  {/* In trash view: Delete Permanently and Restore */}
+                  <Button size="sm" variant="destructive" onClick={() => removeSelected(false)} disabled={selection.size === 0}>
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete Permanently
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={restoreSelected}>Restore</Button>
+                </>
+              ) : (
+                <>
+                  {/* In files view: Trash and Download */}
+                  <Button size="sm" variant="destructive" onClick={() => removeSelected(true)} disabled={selection.size === 0}>
+                    <Trash2 className="h-4 w-4 mr-1" /> Trash
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={downloadSelected}>
+                    <Download className="h-4 w-4 mr-1" /> Download
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -363,14 +572,21 @@ export const Dashboard: React.FC = () => {
         <main className="flex-1 overflow-auto p-3 sm:p-4">
           {currentItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
-              <Folder className="h-10 w-10 text-primary/60 mb-3" />
-              <div className="text-sm mb-3">No files here yet — Upload files or create a folder</div>
-              <div className="flex items-center gap-2">
-                <UploadButton onUpload={onUpload} />
-                <Button variant="cloud" size="sm" onClick={() => setShowCreateFolder(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> New folder
-                </Button>
+              <Trash2 className="h-10 w-10 text-primary/60 mb-3" />
+              <div className="text-sm mb-3">
+                {viewMode === "trash"
+                  ? "Trash is empty"
+                  : "No files here yet — Upload files or create a folder"
+                }
               </div>
+              {viewMode !== "trash" && (
+                <div className="flex items-center gap-2">
+                  <UploadButton onUpload={onUpload} />
+                  <Button variant="cloud" size="sm" onClick={() => setShowCreateFolder(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> New folder
+                  </Button>
+                </div>
+              )}
             </div>
           ) : view === "grid" ? (
             <GridView items={currentItems} selection={selection} onOpen={openItem} onItemClick={handleGridItemClick} />
@@ -422,6 +638,45 @@ export const Dashboard: React.FC = () => {
                     <Button type="submit" variant="cloud">Create</Button>
                   </div>
                 </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md">
+            <Card className="shadow-card border-0 bg-card/80 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Trash2 className="h-6 w-6 text-destructive" />
+                    <div>
+                      <div className="text-lg font-semibold">Delete Files</div>
+                      <div className="text-sm text-muted-foreground">
+                        This action cannot be undone. These files will be permanently deleted from the server.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setShowDeleteConfirm(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={confirmDelete}
+                    >
+                      Delete Forever
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

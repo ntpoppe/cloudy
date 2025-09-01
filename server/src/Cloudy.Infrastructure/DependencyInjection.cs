@@ -35,13 +35,17 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
         // MinIO
-        var minioSection = config.GetSection("Minio");
+        var minioOpts = config.GetSection("Minio").Get<MinioSettings>()
+           ?? throw new InvalidOperationException("Missing Minio config");
+        var endpoint = minioOpts.Endpoint;
+        var accessKey = minioOpts.AccessKey;
+        var secretKey = minioOpts.SecretKey;
         services.AddMinio(cfg => cfg
-            .WithEndpoint(Environment.GetEnvironmentVariable("MINIO_ENDPOINT"))
-            .WithCredentials(
-                Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY"),
-                Environment.GetEnvironmentVariable("MINIO_SECRET_KEY"))
+            .WithEndpoint(endpoint)
+            .WithCredentials(accessKey, secretKey)
+            .WithSSL(false)
             .Build());
+
         services.AddScoped<IBlobStore, MinioBlobStore>();
 
         // Jwt

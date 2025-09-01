@@ -3,6 +3,7 @@ using System;
 using Cloudy.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cloudy.Infrastructure.Migrations
 {
     [DbContext(typeof(CloudyDbContext))]
-    partial class CloudyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250901192530_UserFile")]
+    partial class UserFile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,8 +107,7 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("ParentFolderId")
                         .HasColumnType("integer");
@@ -118,9 +120,7 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentFolderId");
-
-                    b.ToTable("folders", (string)null);
+                    b.ToTable("Folders");
                 });
 
             modelBuilder.Entity("Cloudy.Domain.Entities.User", b =>
@@ -139,8 +139,7 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -154,18 +153,11 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Username")
-                        .IsUnique();
-
-                    b.ToTable("users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Cloudy.Domain.Entities.File", b =>
@@ -202,14 +194,6 @@ namespace Cloudy.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Cloudy.Domain.Entities.Folder", b =>
-                {
-                    b.HasOne("Cloudy.Domain.Entities.Folder", null)
-                        .WithMany()
-                        .HasForeignKey("ParentFolderId")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 #pragma warning restore 612, 618
         }
