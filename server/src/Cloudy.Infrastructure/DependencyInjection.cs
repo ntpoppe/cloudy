@@ -40,10 +40,11 @@ public static class DependencyInjection
         var endpoint = minioOpts.Endpoint;
         var accessKey = minioOpts.AccessKey;
         var secretKey = minioOpts.SecretKey;
+        var useSSL = minioOpts.UseSSL;
         services.AddMinio(cfg => cfg
             .WithEndpoint(endpoint)
             .WithCredentials(accessKey, secretKey)
-            .WithSSL(false)
+            .WithSSL(useSSL)
             .Build());
 
         services.AddScoped<IBlobStore, MinioBlobStore>();

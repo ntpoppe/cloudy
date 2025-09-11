@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cloudy.Infrastructure.Migrations
 {
     [DbContext(typeof(CloudyDbContext))]
-    [Migration("20250901193135_configs")]
-    partial class configs
+    [Migration("20250901210454_UserFile")]
+    partial class UserFile
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
