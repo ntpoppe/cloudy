@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cloudy.Infrastructure.Migrations
 {
     [DbContext(typeof(CloudyDbContext))]
-    [Migration("20250803235651_Users")]
-    partial class Users
+    [Migration("20250901205648_UserFile2")]
+    partial class UserFile2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,6 +32,10 @@ namespace Cloudy.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Bucket")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -52,6 +56,10 @@ namespace Cloudy.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
 
@@ -61,9 +69,17 @@ namespace Cloudy.Infrastructure.Migrations
                     b.Property<int?>("UpdatedBy")
                         .HasColumnType("integer");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Files");
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Bucket", "ObjectKey")
+                        .IsUnique();
+
+                    b.ToTable("files", (string)null);
                 });
 
             modelBuilder.Entity("Cloudy.Domain.Entities.Folder", b =>
@@ -91,7 +107,8 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<int?>("ParentFolderId")
                         .HasColumnType("integer");
@@ -104,7 +121,9 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Folders");
+                    b.HasIndex("ParentFolderId");
+
+                    b.ToTable("folders", (string)null);
                 });
 
             modelBuilder.Entity("Cloudy.Domain.Entities.User", b =>
@@ -123,7 +142,8 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -137,15 +157,28 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("Cloudy.Domain.Entities.File", b =>
                 {
+                    b.HasOne("Cloudy.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.OwnsOne("Cloudy.Domain.ValueObjects.FileMetadata", "Metadata", b1 =>
                         {
                             b1.Property<int>("FileId")
@@ -162,7 +195,7 @@ namespace Cloudy.Infrastructure.Migrations
 
                             b1.HasKey("FileId");
 
-                            b1.ToTable("Files");
+                            b1.ToTable("files");
 
                             b1.WithOwner()
                                 .HasForeignKey("FileId");
@@ -170,6 +203,16 @@ namespace Cloudy.Infrastructure.Migrations
 
                     b.Navigation("Metadata")
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Cloudy.Domain.Entities.Folder", b =>
+                {
+                    b.HasOne("Cloudy.Domain.Entities.Folder", null)
+                        .WithMany()
+                        .HasForeignKey("ParentFolderId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 #pragma warning restore 612, 618
         }

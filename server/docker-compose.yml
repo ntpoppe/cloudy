@@ -44,6 +44,8 @@ services:
       context: .
       dockerfile: src/Cloudy.API/Dockerfile
       target: prod
+    env_file:
+      - .env.prod
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ConnectionStrings__DefaultConnection: ${DB_CONNSTRING}
