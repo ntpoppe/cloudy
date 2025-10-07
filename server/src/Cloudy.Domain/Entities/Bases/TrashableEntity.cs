@@ -1,5 +1,3 @@
-using Cloudy.Domain.Entities;
-
 public abstract class TrashableEntity : TrackableEntity
 {
     public bool IsDeleted { get; protected set; }

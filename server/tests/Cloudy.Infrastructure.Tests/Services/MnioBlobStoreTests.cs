@@ -1,13 +1,8 @@
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Cloudy.Infrastructure.Services;
 using FluentAssertions;
 using Minio;
 using Minio.DataModel.Args;
 using Moq;
-using Xunit;
 
 namespace Cloudy.Infrastructure.Tests.Services;
 
