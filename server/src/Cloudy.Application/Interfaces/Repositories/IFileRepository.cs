@@ -1,5 +1,3 @@
-using Cloudy.Domain.Entities;
-
 namespace Cloudy.Application.Interfaces;
 
 public interface IFileRepository

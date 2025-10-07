@@ -1,10 +1,7 @@
-using System;
 using System.Text;
 using Cloudy.Infrastructure;
-using Cloudy.Infrastructure.Data;
 using Cloudy.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using DotNetEnv;
@@ -47,10 +44,10 @@ builder.Services.AddControllers();
 //----------------------
 // CORS
 //----------------------
-const string CorsPolicy = "Frontend";
+const string corsPolicy = "Frontend";
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(CorsPolicy, policy =>
+    options.AddPolicy(corsPolicy, policy =>
     {
         policy
             .WithOrigins(
@@ -106,16 +103,6 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 //----------------------
-// Database Migration
-//----------------------
-if (app.Environment.IsDevelopment())
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<CloudyDbContext>();
-    await db.Database.MigrateAsync();
-}
-
-//----------------------
 // Middleware Pipeline
 //----------------------
 if (app.Environment.IsDevelopment())
@@ -126,14 +113,8 @@ if (app.Environment.IsDevelopment())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Only redirect in production because the container listens on HTTP
-// if (app.Environment.IsProduction())
-// {
-//     app.UseHttpsRedirection();
-// }
-
 app.UseRouting();
-app.UseCors(CorsPolicy);
+app.UseCors(corsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -148,10 +129,8 @@ static string? GetArgValue(string[] argv, string name)
     return null;
 }
 
-/// <summary>
-/// Set the default connection string from the environment variable DB_CONNSTRING
-/// This is used when docker isn't used. `dotnet run --env-file .env`
-/// </summary>
+// Set the default connection string from the environment variable DB_CONNSTRING
+// This is used when docker isn't used. `dotnet run --env-file .env`
 static void SetDefaultConnectionFromEnvIfExists(WebApplicationBuilder builder, string? envFile)
 {
     if (envFile is null) return;

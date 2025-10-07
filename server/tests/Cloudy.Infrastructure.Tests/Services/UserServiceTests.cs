@@ -5,9 +5,6 @@ using Cloudy.Infrastructure.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Moq;
-using System;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace Cloudy.Infrastructure.Tests.Services;
 
