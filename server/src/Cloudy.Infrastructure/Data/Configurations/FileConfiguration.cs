@@ -15,10 +15,10 @@ public class FileConfiguration : IEntityTypeConfiguration<Domain.Entities.File>
         builder.Property(x => x.ObjectKey).IsRequired();
         
         // User relationship
-        builder.Property(x => x.UserId).IsRequired();
+        builder.Property(x => x.CreatedBy).IsRequired();
         builder.HasOne(x => x.User)
                .WithMany()
-               .HasForeignKey(x => x.UserId)
+               .HasForeignKey(x => x.CreatedBy)
                .OnDelete(DeleteBehavior.Cascade);
         
         // Unique constraint on storage

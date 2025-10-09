@@ -1,3 +1,4 @@
+using Cloudy.Domain.Entities.Bases;
 using Cloudy.Domain.Exceptions;
 
 namespace Cloudy.Domain.Entities;

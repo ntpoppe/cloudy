@@ -68,7 +68,7 @@ public class FolderTests
         var folder = new Folder("Archive");
 
         // Act
-        folder.SoftDelete();
+        folder.SoftDelete(1);
 
         // Assert
         folder.IsDeleted.Should().BeTrue();

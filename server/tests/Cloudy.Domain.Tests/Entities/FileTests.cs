@@ -1,7 +1,7 @@
 ﻿using Cloudy.Domain.Exceptions;
 using Cloudy.Domain.ValueObjects;
 using FluentAssertions;
-using CloudyFile = Cloudy.Domain.Entities.File;
+using File = Cloudy.Domain.Entities.File;
 
 namespace Cloudy.Domain.Tests.Entities;
 
@@ -15,13 +15,13 @@ public class FileTests
         var userId = 1;
 
         // Act
-        var file = new CloudyFile("pic.png", 123, metadata, userId);
+        var file = new File("pic.png", 123, metadata, userId);
 
         // Assert
         file.Name.Should().Be("pic.png");
         file.Size.Should().Be(123);
         file.Metadata.Should().Be(metadata);
-        file.UserId.Should().Be(userId);
+        file.CreatedBy.Should().Be(userId);
         file.IsDeleted.Should().BeFalse();
     }
 
@@ -29,11 +29,11 @@ public class FileTests
     public void Rename_ValidName_Should_UpdateName()
     {
         // Arrange
-        var file = new CloudyFile("old.txt", 10, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var file = new File("old.txt", 10, new FileMetadata("text/plain", DateTime.UtcNow), 1);
         var newName = "new.txt";
 
         // Act
-        file.Rename(newName);
+        file.Rename(newName, 1);
 
         // Assert
         file.Name.Should().Be("new.txt");
@@ -46,10 +46,10 @@ public class FileTests
     public void Rename_InvalidName_Should_Throw(string? badName)
     {
         // Arrange
-        var file = new CloudyFile("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var file = new File("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow), 1);
 
         // Act
-        Action act = () => file.Rename(badName);
+        Action act = () => file.Rename(badName, 1);
 
         // Assert
         act.Should().Throw<DomainException>()
@@ -60,10 +60,10 @@ public class FileTests
     public void SoftDelete_Should_Set_Flags()
     {
         // Arrange
-        var file = new CloudyFile("t.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var file = new File("t.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
 
         // Act
-        file.SoftDelete();
+        file.SoftDelete(1);
 
         // Assert
         file.IsDeleted.Should().BeTrue();

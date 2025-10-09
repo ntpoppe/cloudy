@@ -33,7 +33,7 @@ public class FolderService : IFolderService
         return FolderMapper.MapDto(folder);
     }
 
-    public async Task RenameAsync(int id, string name, CancellationToken cancellationToken = default)
+    public async Task RenameAsync(int id, int userId, string name, CancellationToken cancellationToken = default)
     {
         var folder = await _folderRepo.GetByIdAsync(id, cancellationToken);
         if (folder == null)
@@ -44,13 +44,13 @@ public class FolderService : IFolderService
         await _uow.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(int id, int userId, CancellationToken cancellationToken = default)
     {
         var folder = await _folderRepo.GetByIdAsync(id, cancellationToken);
         if (folder == null)
             throw new InvalidOperationException("'folder' null in FolderService.DeleteAsync");
 
-        folder.SoftDelete();
+        folder.SoftDelete(userId);
         _folderRepo.Update(folder, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
     }
