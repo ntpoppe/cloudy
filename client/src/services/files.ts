@@ -44,6 +44,15 @@ export function mapServerFileToFileItem(
   };
 }
 
+export interface StorageUsage {
+  usedBytes: number;
+  maxBytes: number;
+  usagePercentage: number;
+  usedDisplay: string;
+  maxDisplay: string;
+  availableDisplay: string;
+}
+
 export const fileService = {
   async createUploadIntent(payload: CreateIntentPayload): Promise<CreateIntentResponse> {
     return await http.post<CreateIntentResponse>('/files/intent', payload);
@@ -99,5 +108,10 @@ export const fileService = {
 
   async delete(id: string): Promise<void> {
     return await http.delete<void>(`/files/${id}`);
+  },
+
+  async getStorageUsage(): Promise<StorageUsage> {
+    const response = await http.get<StorageUsage>('/files/storage-usage');
+    return response;
   }
 };

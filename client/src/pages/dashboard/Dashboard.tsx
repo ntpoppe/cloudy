@@ -16,7 +16,6 @@ import {
   RefreshCw,
   Pencil,
 } from "lucide-react";
-import { formatBytes } from "@/lib/format";
 import { GridView } from "@/components/files/views/GridView";
 import { ListView } from "@/components/files/views/ListView";
 import { Breadcrumb } from "@/components/breadcrumbs";
@@ -24,7 +23,7 @@ import { SortControls } from "@/components/files/controls/SortControls";
 import { UploadButton } from "@/components/files/controls/UploadButton";
 import { ActivityRow } from "@/components/activity";
 import { UserMenu } from "@/components/layout/Topbar";
-import { fileService } from "@/services/files";
+import { fileService, type StorageUsage } from "@/services/files";
 
 // --- Types ---
 import type { FileItem } from "@/types/FileItem";
@@ -57,9 +56,9 @@ export const Dashboard: React.FC = () => {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [usedBytes, setUsedBytes] = useState(345678 + 2345);
   const [viewMode, setViewMode] = useState<"files" | "trash">("files");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null);
   const dropRef = useRef<HTMLDivElement | null>(null);
 
   const currentFolderId = path[path.length - 1] ?? null;
@@ -166,12 +165,13 @@ export const Dashboard: React.FC = () => {
     setActivities((a) => [{ id: `ac_${Date.now()}`, message: `Created folder ${folder.name}`, createdAt: new Date().toISOString() }, ...a]);
   }
 
+  // Update the upload function to handle quota errors
   const onUpload = React.useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
     try {
       for (const file of Array.from(files)) {
-        // Create upload intent (get presigned URL)
+        // Check quota before upload
         const { uploadUrl, fileId } = await fileService.createUploadIntent({
           fileName: file.name,
           contentType: file.type,
@@ -193,20 +193,37 @@ export const Dashboard: React.FC = () => {
         newItem.parentId = currentFolderId;
         
         setItems((arr) => [newItem, ...arr]);
-        setUsedBytes((b) => b + newItem.size);
         setActivities((a) => [{ 
           id: `ac_${Date.now()}`, 
           message: `Uploaded ${file.name}`, 
           createdAt: new Date().toISOString() 
         }, ...a]);
+        
+        // Refresh storage usage after upload
+        try {
+          const usage = await fileService.getStorageUsage();
+          setStorageUsage(usage);
+        } catch (error) {
+          console.error('Failed to refresh storage usage after upload:', error);
+        }
       }
     } catch (error) {
-      console.error('Upload failed:', error);
-      setActivities((a) => [{ 
-        id: `ac_${Date.now()}`, 
-        message: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
-        createdAt: new Date().toISOString() 
-      }, ...a]);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: string } };
+        if (axiosError.response?.data?.includes('Storage quota exceeded')) {
+          setActivities((a) => [{ 
+            id: `ac_${Date.now()}`, 
+            message: `Upload failed: ${axiosError.response?.data}`, 
+            createdAt: new Date().toISOString() 
+          }, ...a]);
+        }
+      } else {
+        setActivities((a) => [{ 
+          id: `ac_${Date.now()}`, 
+          message: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+          createdAt: new Date().toISOString() 
+        }, ...a]);
+      }
     }
   }, [currentFolderId]);
 
@@ -284,11 +301,9 @@ export const Dashboard: React.FC = () => {
     }
 
     // Soft delete (move to trash)
-    const deletedSize = selectedItems.reduce((total, item) => total + item.size, 0);
     setItems((arr) =>
       arr.map((it) => (selection.has(it.id) ? { ...it, trashed: true } : it))
     );
-    setUsedBytes((bytes) => bytes - deletedSize);
     setSelection(new Set());
 
     setActivities((a) => [{
@@ -314,8 +329,6 @@ export const Dashboard: React.FC = () => {
 
       // Remove items from state (hard delete)
       setItems((arr) => arr.filter((it) => !selection.has(it.id)));
-      const deletedSize = selectedItems.reduce((total, item) => total + item.size, 0);
-      setUsedBytes((bytes) => bytes - deletedSize);
       setSelection(new Set());
 
       setActivities((a) => [{
@@ -323,6 +336,14 @@ export const Dashboard: React.FC = () => {
         message: `Permanently deleted ${selectedItems.length} file(s)`,
         createdAt: new Date().toISOString()
       }, ...a]);
+      
+      // Refresh storage usage after permanent delete
+      try {
+        const usage = await fileService.getStorageUsage();
+        setStorageUsage(usage);
+      } catch (error) {
+        console.error('Failed to refresh storage usage after permanent delete:', error);
+      }
 
     } catch (error) {
       console.error('Delete failed:', error);
@@ -336,11 +357,19 @@ export const Dashboard: React.FC = () => {
     setShowDeleteConfirm(false);
   }
 
-  function restoreSelected() {
+  async function restoreSelected() {
     if (selection.size === 0) return;
     setItems((arr) => arr.map((it) => (selection.has(it.id) ? { ...it, trashed: false } : it)));
     setSelection(new Set());
     setActivities((a) => [{ id: `ac_${Date.now()}`, message: `Restored ${selection.size} item(s)`, createdAt: new Date().toISOString() }, ...a]);
+    
+    // Refresh storage usage after restore
+    try {
+      const usage = await fileService.getStorageUsage();
+      setStorageUsage(usage);
+    } catch (error) {
+      console.error('Failed to refresh storage usage after restore:', error);
+    }
   }
 
   function goToRoot() {
@@ -384,9 +413,6 @@ export const Dashboard: React.FC = () => {
         console.log("Files loaded", files);
         setItems(files);
         
-        // Calculate total used bytes
-        const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
-        setUsedBytes(totalBytes);
         
         setActivities((a) => [{ 
           id: `ac_${Date.now()}`, 
@@ -407,9 +433,21 @@ export const Dashboard: React.FC = () => {
     loadFiles();
   }, []);
 
-  const used = usedBytes;
-  const total = 0.05 * 1024 * 1024 * 1024; // 0.05 GB demo
-  const usedPct = Math.min(100, Math.round((used / total) * 100));
+  const usedPct = storageUsage ? Math.round(storageUsage.usagePercentage) : 0;
+
+
+  React.useEffect(() => {
+    const loadStorageUsage = async () => {
+      try {
+        const usage = await fileService.getStorageUsage();
+        setStorageUsage(usage);
+      } catch (error) {
+        console.error('Failed to load storage usage:', error);
+      }
+    };
+    
+    loadStorageUsage();
+  }, []);
 
   return (
     <div ref={dropRef} className="h-screen w-screen bg-background text-foreground flex">
@@ -446,7 +484,7 @@ export const Dashboard: React.FC = () => {
             <div className="h-full bg-primary" style={{ width: `${usedPct}%` }} />
           </div>
           <div className="text-xs text-muted-foreground">
-            {formatBytes(used)} / {formatBytes(total)} used
+            {storageUsage ? `${storageUsage.usedDisplay} / ${storageUsage.maxDisplay} used` : 'Loading...'}
           </div>
         </div>
       </aside>
@@ -490,8 +528,11 @@ export const Dashboard: React.FC = () => {
                   try {
                     const files = await fileService.getAll();
                     setItems(files);
-                    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
-                    setUsedBytes(totalBytes);
+                    
+                    // Also refresh storage usage
+                    const usage = await fileService.getStorageUsage();
+                    setStorageUsage(usage);
+                    
                     setActivities((a) => [{ 
                       id: `ac_${Date.now()}`, 
                       message: `Refreshed file list`, 
