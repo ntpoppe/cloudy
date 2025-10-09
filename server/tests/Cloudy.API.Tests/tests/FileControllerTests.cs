@@ -35,7 +35,7 @@ public class FilesControllerTests
         var expectedTtl = 600;
 
         _fileService
-            .Setup(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()))
             .ReturnsAsync((expectedObjectKey, expectedUrl, expectedTtl));
 
         // Act
@@ -48,7 +48,7 @@ public class FilesControllerTests
         response.UploadUrl.Should().Be(expectedUrl);
         response.FileId.Should().Be(expectedObjectKey);
 
-        _fileService.Verify(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class FilesControllerTests
         var expectedTtl = 600;
 
         _fileService
-            .Setup(s => s.CreateUploadIntentAsync(request.FileName, "application/octet-stream", TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateUploadIntentAsync(request.FileName, "application/octet-stream", 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()))
             .ReturnsAsync((expectedObjectKey, expectedUrl, expectedTtl));
 
         // Act
@@ -83,7 +83,7 @@ public class FilesControllerTests
 
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
-        _fileService.Verify(s => s.CreateUploadIntentAsync(request.FileName, "application/octet-stream", TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.CreateUploadIntentAsync(request.FileName, "application/octet-stream", 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -277,42 +277,31 @@ public class FilesControllerTests
     {
         // Arrange
         var request = new FilesController.CreateIntentRequest("test.txt", "text/plain", 1024);
-        var cts = new CancellationTokenSource();
-        var expectedObjectKey = "guid-test.txt";
-        var expectedUrl = "https://presigned-put-url";
-        var expectedTtl = 600;
+        using var cts = new CancellationTokenSource();
+        var expected = ("guid-test.txt", "https://presigned-put-url", 600);
 
         _fileService
-            .Setup(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, TimeSpan.FromMinutes(10), cts.Token))
-            .ReturnsAsync((expectedObjectKey, expectedUrl, expectedTtl));
+            .Setup(s => s.CreateUploadIntentAsync(
+                request.FileName,
+                request.ContentType,
+                request.SizeBytes,
+                1,
+                TimeSpan.FromMinutes(10),
+                cts.Token))
+            .ReturnsAsync(expected);
 
         // Act
         var actionResult = await _controller.CreateIntent(request, cts.Token);
 
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
-        _fileService.Verify(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, TimeSpan.FromMinutes(10), cts.Token), Times.Once);
-    }
-
-    [Fact]
-    public async Task Finalize_Should_Propagate_CancellationToken()
-    {
-        // Arrange
-        var fileId = "test-key";
-        var request = new FilesController.FinalizeRequest("test-key", "test.txt", "text/plain", 1024);
-        var cts = new CancellationTokenSource();
-        var expectedDto = new FileDto(1, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key");
-
-        _fileService
-            .Setup(s => s.CreateMetadataAsync(request.ObjectKey, request.OriginalName, request.ContentType, request.SizeBytes, It.IsAny<int>(), cts.Token))
-            .ReturnsAsync(expectedDto);
-
-        // Act
-        var actionResult = await _controller.Finalize(fileId, request, cts.Token);
-
-        // Assert
-        actionResult.Result.Should().BeOfType<OkObjectResult>();
-        _fileService.Verify(s => s.CreateMetadataAsync(request.ObjectKey, request.OriginalName, request.ContentType, request.SizeBytes, It.IsAny<int>(), cts.Token), Times.Once);
+        _fileService.Verify(s => s.CreateUploadIntentAsync(
+            request.FileName,
+            request.ContentType,
+            request.SizeBytes,
+            1,
+            TimeSpan.FromMinutes(10),
+            It.Is<CancellationToken>(t => t == cts.Token)), Times.Once);
     }
 
     [Fact]

@@ -39,4 +39,11 @@ public class FileRepository : IFileRepository
     {
         _context.Files.Update(file);
     }
+
+    public async Task<long> GetTotalStorageUsedByUserAsync(int userId, CancellationToken ct = default)
+    {
+        return await _context.Files
+            .Where(f => f.CreatedBy == userId)
+            .SumAsync(f => f.Size, ct);
+    }
 }

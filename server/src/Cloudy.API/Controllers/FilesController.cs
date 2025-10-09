@@ -51,8 +51,17 @@ public class FilesController : ControllerBase
             ? "application/octet-stream"
             : req.ContentType;
 
-        var (objectKey, url, ttl) =
-            await _fileService.CreateUploadIntentAsync(req.FileName, contentType, TimeSpan.FromMinutes(10), ct);
+        var result = await _fileService.CreateUploadIntentAsync(
+            req.FileName,
+            contentType,
+            req.SizeBytes,
+            GetCurrentUserId(),
+            TimeSpan.FromMinutes(10),
+            ct
+        );
+
+        var objectKey = result.ObjectKey;
+        var url = result.Url;
 
         return Ok(new CreateIntentResponse(url, objectKey));
     }
@@ -110,5 +119,13 @@ public class FilesController : ControllerBase
     {
         var file = await _fileService.GetByIdAsync(id, ct);
         return Ok(file);
+    }
+
+    [HttpGet("storage-usage")]
+    public async Task<ActionResult<StorageUsageDto>> GetStorageUsage(CancellationToken ct)
+    {
+        var userId = GetCurrentUserId();
+        var usage = await _fileService.GetStorageUsageAsync(userId, ct);
+        return Ok(usage);
     }
 }

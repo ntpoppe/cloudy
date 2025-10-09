@@ -53,6 +53,9 @@ public static class DependencyInjection
         services.Configure<JwtSettings>(config.GetSection("Jwt"));
         services.AddSingleton<IJwtService, JwtService>();
 
+        // Storage
+        services.Configure<StorageSettings>(config.GetSection("Storage"));
+
         return services;
     }
 }

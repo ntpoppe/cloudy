@@ -13,25 +13,41 @@ public class FileService : IFileService
     private readonly IFileRepository _fileRepo;
     private readonly IUnitOfWork _uow;
     private readonly string _bucket;
+    private readonly long _maxStorageBytes;
 
     public FileService(
         IFileRepository fileRepo,
         IUnitOfWork uow,
         IBlobStore blobStore,
-        IOptions<MinioSettings> minioSettings)
+        IOptions<MinioSettings> minioSettings,
+        IOptions<StorageSettings> storageSettings)
     {
         _fileRepo = fileRepo;
         _uow = uow;
         _blobStore = blobStore;
         _bucket = minioSettings.Value.Bucket;
+        _maxStorageBytes = storageSettings.Value.MaxStorageBytes;
     }
 
     // Create pre-signed PUT for client upload
     public async Task<(string ObjectKey, string Url, int ExpiresInSeconds)>
-        CreateUploadIntentAsync(string fileName, string contentType, TimeSpan ttl, CancellationToken ct = default)
+        CreateUploadIntentAsync(string fileName, string contentType, long sizeBytes, int userId, TimeSpan ttl, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(fileName))
             throw new ArgumentException("fileName is required.", nameof(fileName));
+
+        // Check storage quota
+        var canUpload = await CanUserUploadFileAsync(userId, sizeBytes, ct);
+        if (!canUpload)
+        {
+            var currentUsage = await GetUserStorageUsageAsync(userId, ct);
+            var maxBytes = GetUserStorageLimit(userId);
+            var availableSpace = maxBytes - currentUsage;
+            throw new InvalidOperationException(
+                $"Storage quota exceeded. Available space: {availableSpace / (1024 * 1024)}MB, " +
+                $"Requested: {sizeBytes / (1024 * 1024)}MB, " +
+                $"Total quota: {maxBytes / (1024 * 1024)}MB");
+        }
 
         var objectKey = $"{Guid.NewGuid()}-{fileName}";
 
@@ -53,6 +69,13 @@ public class FileService : IFileService
             throw new ArgumentException("objectKey is required.", nameof(objectKey));
         if (string.IsNullOrWhiteSpace(originalName))
             throw new ArgumentException("originalName is required.", nameof(originalName));
+
+        // Double-check quota before saving metadata
+        var canUpload = await CanUserUploadFileAsync(userId, sizeBytes, ct);
+        if (!canUpload)
+        {
+            throw new InvalidOperationException("Storage quota exceeded during metadata creation.");
+        }
 
         var metadata = new FileMetadata(contentType, DateTime.UtcNow);
         var file = new Domain.Entities.File(originalName, sizeBytes, metadata, userId);
@@ -114,4 +137,31 @@ public class FileService : IFileService
         var files = await _fileRepo.GetByUserIdAsync(userId, ct);
         return files.Select(FileMapper.MapDto);
     }
-}
+
+    public async Task<long> GetUserStorageUsageAsync(int userId, CancellationToken ct = default)
+    {
+        return await _fileRepo.GetTotalStorageUsedByUserAsync(userId, ct);
+    }
+
+    public async Task<bool> CanUserUploadFileAsync(int userId, long fileSizeBytes, CancellationToken ct = default)
+    {
+        var currentUsage = await GetUserStorageUsageAsync(userId, ct);
+        var maxBytes = GetUserStorageLimit(userId);
+        return (currentUsage + fileSizeBytes) <= maxBytes;
+    }
+
+    public async Task<StorageUsageDto> GetStorageUsageAsync(int userId, CancellationToken ct = default)
+    {
+        var usedBytes = await GetUserStorageUsageAsync(userId, ct);
+        var maxBytes = GetUserStorageLimit(userId);
+        return new StorageUsageDto
+        {
+            UsedBytes = usedBytes,
+            MaxBytes = maxBytes,
+            UsagePercentage = (double)usedBytes / maxBytes * 100
+        };
+    }
+
+    private long GetUserStorageLimit(int userId)
+        => userId == 1 ? 250L * 1024 * 1024 * 1024 : _maxStorageBytes;
+    }

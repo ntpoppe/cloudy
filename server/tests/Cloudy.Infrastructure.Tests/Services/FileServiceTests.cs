@@ -16,11 +16,13 @@ public class FileServiceTests
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IBlobStore> _blobStore = new();
     private readonly Mock<IOptions<MinioSettings>> _minioSettings = new();
+    private readonly Mock<IOptions<StorageSettings>> _storageSettings = new();
 
     private FileService CreateSut()
     {
         _minioSettings.Setup(x => x.Value).Returns(new MinioSettings { Bucket = "test-bucket" });
-        return new FileService(_fileRepo.Object, _uow.Object, _blobStore.Object, _minioSettings.Object);
+        _storageSettings.Setup(x => x.Value).Returns(new StorageSettings { MaxStorageBytes = 1024 * 1024 * 1024 });
+        return new FileService(_fileRepo.Object, _uow.Object, _blobStore.Object, _minioSettings.Object, _storageSettings.Object);
     }
 
     [Fact]
@@ -37,8 +39,10 @@ public class FileServiceTests
 
         var sut = CreateSut();
 
+        var userId = 1;
+
         // Act
-        var result = await sut.CreateUploadIntentAsync(fileName, contentType, ttl);
+        var result = await sut.CreateUploadIntentAsync(fileName, contentType, 1024, userId, ttl, CancellationToken.None);
 
         // Assert
         result.ObjectKey.Should().Contain(fileName);
@@ -54,7 +58,7 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.CreateUploadIntentAsync("", "text/plain", TimeSpan.FromMinutes(5)))
+        await sut.Invoking(s => s.CreateUploadIntentAsync("", "text/plain", 1024, 1, TimeSpan.FromMinutes(5), CancellationToken.None))
             .Should().ThrowAsync<ArgumentException>()
             .WithMessage("*fileName is required*");
     }

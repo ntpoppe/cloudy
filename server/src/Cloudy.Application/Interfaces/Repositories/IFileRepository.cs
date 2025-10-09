@@ -7,4 +7,6 @@ public interface IFileRepository
     Task<IEnumerable<Domain.Entities.File>> GetByUserIdAsync(int userId, CancellationToken ct = default);
     Task AddAsync(Domain.Entities.File file, CancellationToken ct = default);
     void Update(Domain.Entities.File file);
+    Task<long> GetTotalStorageUsedByUserAsync(int userId, CancellationToken ct = default);
+
 }
