@@ -1,11 +1,12 @@
-﻿using Cloudy.Application.Interfaces;
+﻿using Cloudy.Application.DTOs;
+using Cloudy.Application.Interfaces;
 using Cloudy.Infrastructure.Services;
 using Cloudy.Domain.ValueObjects;
 using FluentAssertions;
 using Moq;
 using Microsoft.Extensions.Options;
 using Cloudy.Infrastructure.Settings;
-using CloudyFile = Cloudy.Domain.Entities.File;
+using File = Cloudy.Domain.Entities.File;
 
 namespace Cloudy.Infrastructure.Tests.Services;
 
@@ -68,7 +69,7 @@ public class FileServiceTests
         var sizeBytes = 1024L;
         var userId = 1;
 
-        _fileRepo.Setup(r => r.AddAsync(It.IsAny<CloudyFile>(), It.IsAny<CancellationToken>()))
+        _fileRepo.Setup(r => r.AddAsync(It.IsAny<File>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
@@ -84,11 +85,11 @@ public class FileServiceTests
         result.Size.Should().Be(sizeBytes);
         result.ContentType.Should().Be(contentType);
         
-        _fileRepo.Verify(r => r.AddAsync(It.Is<CloudyFile>(f => 
+        _fileRepo.Verify(r => r.AddAsync(It.Is<File>(f => 
             f.Name == originalName && 
             f.Size == sizeBytes &&
             f.Metadata.ContentType == contentType &&
-            f.UserId == userId), It.IsAny<CancellationToken>()), Times.Once);
+            f.CreatedBy == userId), It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -120,8 +121,8 @@ public class FileServiceTests
     public async Task GetByIdAsync_Should_Return_FileDto()
     {
         // Arrange
-        var file = new CloudyFile("test.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
-        typeof(CloudyFile).GetProperty("Id")!.SetValue(file, 1);
+        var file = new File("test.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        typeof(File).GetProperty("Id")!.SetValue(file, 1);
         
         _fileRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(file);
@@ -144,7 +145,7 @@ public class FileServiceTests
     {
         // Arrange
         _fileRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CloudyFile?)null);
+            .ReturnsAsync((File?)null);
 
         var sut = CreateSut();
 
@@ -158,8 +159,8 @@ public class FileServiceTests
     public async Task GetDownloadUrlAsync_Should_Return_PresignedUrl()
     {
         // Arrange
-        var file = new CloudyFile("test.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
-        typeof(CloudyFile).GetProperty("Id")!.SetValue(file, 1);
+        var file = new File("test.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        typeof(File).GetProperty("Id")!.SetValue(file, 1);
         file.SetStorage("test-bucket", "test-key");
         
         var expectedUrl = "https://presigned-get-url";
@@ -185,7 +186,7 @@ public class FileServiceTests
     {
         // Arrange
         _fileRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CloudyFile?)null);
+            .ReturnsAsync((File?)null);
 
         var sut = CreateSut();
 
@@ -199,8 +200,8 @@ public class FileServiceTests
     public async Task RenameAsync_Should_Update_And_Save()
     {
         // Arrange
-        var file = new CloudyFile("old.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
-        typeof(CloudyFile).GetProperty("Id")!.SetValue(file, 1);
+        var file = new File("old.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        typeof(File).GetProperty("Id")!.SetValue(file, 1);
         
         _fileRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(file);
@@ -210,7 +211,7 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act
-        await sut.RenameAsync(1, "new.txt");
+        await sut.RenameAsync(1, 1, "new.txt");
 
         // Assert
         file.Name.Should().Be("new.txt");
@@ -225,7 +226,7 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.RenameAsync(1, ""))
+        await sut.Invoking(s => s.RenameAsync(1, 1, ""))
             .Should().ThrowAsync<ArgumentException>()
             .WithMessage("*newName is required*");
     }
@@ -235,12 +236,12 @@ public class FileServiceTests
     {
         // Arrange
         _fileRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CloudyFile?)null);
+            .ReturnsAsync((File?)null);
 
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.RenameAsync(1, "new.txt"))
+        await sut.Invoking(s => s.RenameAsync(1, 1, "new.txt"))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*file not found*");
     }
@@ -249,8 +250,8 @@ public class FileServiceTests
     public async Task DeleteAsync_Should_Delete_From_BlobStore_And_Soft_Delete()
     {
         // Arrange
-        var file = new CloudyFile("test.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
-        typeof(CloudyFile).GetProperty("Id")!.SetValue(file, 1);
+        var file = new File("test.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        typeof(File).GetProperty("Id")!.SetValue(file, 1);
         file.SetStorage("test-bucket", "test-key");
         
         _fileRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
@@ -263,7 +264,7 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act
-        await sut.DeleteAsync(1);
+        await sut.DeleteAsync(1, 1);
 
         // Assert
         file.IsDeleted.Should().BeTrue();
@@ -277,12 +278,12 @@ public class FileServiceTests
     {
         // Arrange
         _fileRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CloudyFile?)null);
+            .ReturnsAsync((File?)null);
 
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.DeleteAsync(1))
+        await sut.Invoking(s => s.DeleteAsync(1, 1))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*file not found*");
     }
@@ -292,14 +293,14 @@ public class FileServiceTests
     {
         // Arrange
         var userId = 1;
-        var files = new List<CloudyFile>
+        var files = new List<File>
         {
             new("file1.txt", 1024, new FileMetadata("text/plain", DateTime.UtcNow), userId),
             new("file2.pdf", 2048, new FileMetadata("application/pdf", DateTime.UtcNow), userId)
         };
         
-        typeof(CloudyFile).GetProperty("Id")!.SetValue(files[0], 1);
-        typeof(CloudyFile).GetProperty("Id")!.SetValue(files[1], 2);
+        typeof(File).GetProperty("Id")!.SetValue(files[0], 1);
+        typeof(File).GetProperty("Id")!.SetValue(files[1], 2);
         files[0].SetStorage("test-bucket", "key1");
         files[1].SetStorage("test-bucket", "key2");
 
@@ -312,8 +313,9 @@ public class FileServiceTests
         var result = await sut.GetAllAsync(userId);
 
         // Assert
-        result.Should().NotBeNull();
-        var resultList = result.ToList();
+        var fileDtos = result as List<FileDto> ?? result.ToList();
+        fileDtos.Should().NotBeNull();
+        var resultList = fileDtos.ToList();
         resultList.Should().HaveCount(2);
         resultList[0].Id.Should().Be(1);
         resultList[0].Name.Should().Be("file1.txt");
@@ -329,7 +331,7 @@ public class FileServiceTests
         // Arrange
         var userId = 1;
         _fileRepo.Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<CloudyFile>());
+            .ReturnsAsync(new List<File>());
 
         var sut = CreateSut();
 
@@ -337,8 +339,9 @@ public class FileServiceTests
         var result = await sut.GetAllAsync(userId);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Should().BeEmpty();
+        var fileDtos = result as List<FileDto> ?? result.ToList();
+        fileDtos.Should().NotBeNull();
+        fileDtos.Should().BeEmpty();
 
         _fileRepo.Verify(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
     }

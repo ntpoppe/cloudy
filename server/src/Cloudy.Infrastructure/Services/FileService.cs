@@ -26,7 +26,7 @@ public class FileService : IFileService
         _bucket = minioSettings.Value.Bucket;
     }
 
-    // Create presigned PUT for client upload
+    // Create pre-signed PUT for client upload
     public async Task<(string ObjectKey, string Url, int ExpiresInSeconds)>
         CreateUploadIntentAsync(string fileName, string contentType, TimeSpan ttl, CancellationToken ct = default)
     {
@@ -35,7 +35,7 @@ public class FileService : IFileService
 
         var objectKey = $"{Guid.NewGuid()}-{fileName}";
 
-        // MinIO presigned PUT
+        // MinIO pre-signed PUT
         var url = await _blobStore.GetPresignedPutUrlAsync(_bucket, objectKey, ttl);
         return (objectKey, url, (int)ttl.TotalSeconds);
     }
@@ -81,7 +81,7 @@ public class FileService : IFileService
     }
 
     //  Rename (metadata only)
-    public async Task RenameAsync(int id, string newName, CancellationToken ct = default)
+    public async Task RenameAsync(int id, int userId, string newName, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(newName))
             throw new ArgumentException("newName is required.", nameof(newName));
@@ -89,13 +89,13 @@ public class FileService : IFileService
         var f = await _fileRepo.GetByIdAsync(id, ct)
                 ?? throw new InvalidOperationException("file not found");
 
-        f.Rename(newName);
+        f.Rename(newName, userId);
         _fileRepo.Update(f);
         await _uow.SaveChangesAsync(ct);
     }
 
     // Delete (MinIO + soft delete)
-    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    public async Task DeleteAsync(int id, int userId, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(id, ct)
                 ?? throw new InvalidOperationException("file not found");
@@ -104,7 +104,7 @@ public class FileService : IFileService
         await _blobStore.DeleteAsync(f.Bucket, f.ObjectKey);
 
         // Soft delete in DB
-        f.SoftDelete();
+        f.SoftDelete(userId);
         _fileRepo.Update(f);
         await _uow.SaveChangesAsync(ct);
     }

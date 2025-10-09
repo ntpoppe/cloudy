@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -6,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cloudy.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class UserFile2 : Migration
+    public partial class RemoveUserId3 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,7 +26,7 @@ namespace Cloudy.Infrastructure.Migrations
                     UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<int>(type: "integer", nullable: true)
+                    DeletedBy = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -69,21 +70,20 @@ namespace Cloudy.Infrastructure.Migrations
                     UploadedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Bucket = table.Column<string>(type: "text", nullable: false),
                     ObjectKey = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedBy = table.Column<int>(type: "integer", nullable: true),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: false),
                     UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<int>(type: "integer", nullable: true)
+                    DeletedBy = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_files", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_files_users_UserId",
-                        column: x => x.UserId,
+                        name: "FK_files_users_CreatedBy",
+                        column: x => x.CreatedBy,
                         principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -96,9 +96,9 @@ namespace Cloudy.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_files_UserId",
+                name: "IX_files_CreatedBy",
                 table: "files",
-                column: "UserId");
+                column: "CreatedBy");
 
             migrationBuilder.CreateIndex(
                 name: "IX_folders_ParentFolderId",

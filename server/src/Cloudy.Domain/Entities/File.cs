@@ -1,5 +1,6 @@
 using Cloudy.Domain.Exceptions;
 using Cloudy.Domain.ValueObjects;
+using Cloudy.Domain.Entities.Bases;
 
 namespace Cloudy.Domain.Entities;
 
@@ -10,7 +11,6 @@ public class File : TrashableEntity, IBlobStorable
     public FileMetadata Metadata { get; private set; }
     public string Bucket { get; private set; }
     public string ObjectKey { get; private set; }
-    public int UserId { get; private set; }
     public User User { get; private set; } = null!;
 
     // For EF Core, those properties shouldn't be null
@@ -27,16 +27,18 @@ public class File : TrashableEntity, IBlobStorable
         Name = name;
         Size = size;
         Metadata = metadata;
-        UserId = userId;
+        CreatedBy = userId;
+        UpdatedBy = userId;
         Bucket = "cloudy";
         ObjectKey = Common.GenerateStorageKey(name);
     }
 
-    public void Rename(string? newName)
+    public void Rename(string? newName, int userId)
     {
         if (string.IsNullOrWhiteSpace(newName))
             throw new DomainException("Name cannot be empty.");
         Name = newName;
+        Touch(userId);
     }
 
     public void SetStorage(string bucket, string objectKey)

@@ -26,7 +26,7 @@ public class FileRepository : IFileRepository
     public async Task<IEnumerable<Domain.Entities.File>> GetByUserIdAsync(int userId, CancellationToken ct = default)
     {
         return await _context.Files
-            .Where(f => f.UserId == userId)
+            .Where(f => f.CreatedBy == userId)
             .ToListAsync(ct);
     }
 

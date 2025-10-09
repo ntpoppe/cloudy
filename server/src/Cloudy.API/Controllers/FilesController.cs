@@ -83,7 +83,8 @@ public class FilesController : ControllerBase
         if (string.IsNullOrWhiteSpace(req.NewName))
             return BadRequest("NewName required.");
 
-        await _fileService.RenameAsync(id, req.NewName, ct);
+        var userId = GetCurrentUserId();
+        await _fileService.RenameAsync(id, userId, req.NewName, ct);
         return NoContent();
     }
 
@@ -91,7 +92,8 @@ public class FilesController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
     {
-        await _fileService.DeleteAsync(id, ct);
+        var userId = GetCurrentUserId();
+        await _fileService.DeleteAsync(id, userId, ct);
         return NoContent();
     }
 

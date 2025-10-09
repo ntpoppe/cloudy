@@ -37,13 +37,13 @@ namespace Cloudy.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("CreatedBy")
+                    b.Property<int>("CreatedBy")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("DeletedBy")
+                    b.Property<int>("DeletedBy")
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsDeleted")
@@ -66,12 +66,9 @@ namespace Cloudy.Infrastructure.Migrations
                     b.Property<int?>("UpdatedBy")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("CreatedBy");
 
                     b.HasIndex("Bucket", "ObjectKey")
                         .IsUnique();
@@ -96,7 +93,7 @@ namespace Cloudy.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("DeletedBy")
+                    b.Property<int>("DeletedBy")
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsDeleted")
@@ -172,7 +169,7 @@ namespace Cloudy.Infrastructure.Migrations
                 {
                     b.HasOne("Cloudy.Domain.Entities.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("CreatedBy")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

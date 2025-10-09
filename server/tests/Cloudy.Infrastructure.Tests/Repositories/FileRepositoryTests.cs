@@ -4,7 +4,7 @@ using Cloudy.Infrastructure.Repositories;
 using Cloudy.Infrastructure.Tests.TestHelpers;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using CloudyFile = Cloudy.Domain.Entities.File;
+using File = Cloudy.Domain.Entities.File;
 
 namespace Cloudy.Infrastructure.Tests.Repositories;
 
@@ -19,7 +19,7 @@ public class FileRepositoryTests
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
         var metadata = new FileMetadata("text/plain", DateTime.UtcNow);
-        var file = new CloudyFile("hello.txt", 12, metadata, 1);
+        var file = new File("hello.txt", 12, metadata, 1);
 
         await repo.AddAsync(file);
         await ctx.SaveChangesAsync();
@@ -27,7 +27,7 @@ public class FileRepositoryTests
         var fetched = await ctx.Files.SingleAsync();
         fetched.Name.Should().Be("hello.txt");
         fetched.Metadata.ContentType.Should().Be("text/plain");
-        fetched.UserId.Should().Be(1);
+        fetched.CreatedBy.Should().Be(1);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class FileRepositoryTests
     {
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
-        var file = new CloudyFile("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var file = new File("a.txt", 5, new FileMetadata("text/plain", DateTime.UtcNow), 1);
         await repo.AddAsync(file);
         await ctx.SaveChangesAsync();
 
@@ -60,11 +60,11 @@ public class FileRepositoryTests
     {
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
-        var file = new CloudyFile("old.txt", 3, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var file = new File("old.txt", 3, new FileMetadata("text/plain", DateTime.UtcNow), 1);
         await repo.AddAsync(file);
         await ctx.SaveChangesAsync();
 
-        file.Rename("new.txt");
+        file.Rename("new.txt", 1);
         repo.Update(file);
         await ctx.SaveChangesAsync();
 
@@ -78,9 +78,9 @@ public class FileRepositoryTests
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
 
-        var keep = new CloudyFile("keep.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
-        var del  = new CloudyFile("del.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow), 1);
-        del.SoftDelete();
+        var keep = new File("keep.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var del  = new File("del.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        del.SoftDelete(1);
 
         await repo.AddAsync(keep);
         await repo.AddAsync(del);
@@ -96,8 +96,8 @@ public class FileRepositoryTests
         var ctx = GetContext();
         var repo = new FileRepository(ctx);
 
-        var user1File = new CloudyFile("user1.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
-        var user2File = new CloudyFile("user2.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow), 2);
+        var user1File = new File("user1.txt", 1, new FileMetadata("text/plain", DateTime.UtcNow), 1);
+        var user2File = new File("user2.txt", 2, new FileMetadata("text/plain", DateTime.UtcNow), 2);
 
         await repo.AddAsync(user1File);
         await repo.AddAsync(user2File);

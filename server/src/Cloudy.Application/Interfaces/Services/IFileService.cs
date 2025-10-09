@@ -17,7 +17,7 @@ public interface IFileService
 
     Task<FileDto> GetByIdAsync(int id, CancellationToken ct = default);
     Task<string> GetDownloadUrlAsync(int id, TimeSpan ttl, CancellationToken ct = default);
-    Task RenameAsync(int id, string newName, CancellationToken ct = default);
-    Task DeleteAsync(int id, CancellationToken ct = default);
+    Task RenameAsync(int id, int userId, string newName, CancellationToken ct = default);
+    Task DeleteAsync(int id, int userId, CancellationToken ct = default);
     Task<IEnumerable<FileDto>> GetAllAsync(int userId, CancellationToken ct = default);
 }

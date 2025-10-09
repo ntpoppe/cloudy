@@ -1,3 +1,5 @@
+using Cloudy.Domain.Entities.Bases;
+
 namespace Cloudy.Domain.Entities;
 
 public class User : TrackableEntity

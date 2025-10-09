@@ -1,4 +1,4 @@
-using Cloudy.Domain.Entities;
+namespace Cloudy.Domain.Entities.Bases;
 
 public abstract class TrackableEntity : Entity
 {

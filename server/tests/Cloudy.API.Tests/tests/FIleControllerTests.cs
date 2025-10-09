@@ -172,7 +172,7 @@ public class FilesControllerTests
         var request = new FilesController.RenameRequest("new-name.txt");
 
         _fileService
-            .Setup(s => s.RenameAsync(fileId, request.NewName, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RenameAsync(fileId, 1, request.NewName, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -181,7 +181,7 @@ public class FilesControllerTests
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
 
-        _fileService.Verify(s => s.RenameAsync(fileId, request.NewName, It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.RenameAsync(fileId, 1, request.NewName, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -206,7 +206,7 @@ public class FilesControllerTests
         var fileId = 1;
 
         _fileService
-            .Setup(s => s.DeleteAsync(fileId, It.IsAny<CancellationToken>()))
+            .Setup(s => s.DeleteAsync(fileId, 1, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -215,7 +215,7 @@ public class FilesControllerTests
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
 
-        _fileService.Verify(s => s.DeleteAsync(fileId, It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.DeleteAsync(fileId, 1, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -344,7 +344,7 @@ public class FilesControllerTests
         var cts = new CancellationTokenSource();
 
         _fileService
-            .Setup(s => s.RenameAsync(fileId, request.NewName, cts.Token))
+            .Setup(s => s.RenameAsync(fileId, 1, request.NewName, cts.Token))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -352,7 +352,7 @@ public class FilesControllerTests
 
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
-        _fileService.Verify(s => s.RenameAsync(fileId, request.NewName, cts.Token), Times.Once);
+        _fileService.Verify(s => s.RenameAsync(fileId, 1, request.NewName, cts.Token), Times.Once);
     }
 
     [Fact]
@@ -363,7 +363,7 @@ public class FilesControllerTests
         var cts = new CancellationTokenSource();
 
         _fileService
-            .Setup(s => s.DeleteAsync(fileId, cts.Token))
+            .Setup(s => s.DeleteAsync(fileId, 1, cts.Token))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -371,7 +371,7 @@ public class FilesControllerTests
 
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
-        _fileService.Verify(s => s.DeleteAsync(fileId, cts.Token), Times.Once);
+        _fileService.Verify(s => s.DeleteAsync(fileId, 1, cts.Token), Times.Once);
     }
 
     [Fact]
