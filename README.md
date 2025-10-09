@@ -1,15 +1,21 @@
-# ☁️ Cloudy - A Personal Cloud Storage Platform
+# Cloudy - My Personal Cloud Platform
 
-A full-stack cloud storage solution built with modern technologies, featuring a React frontend and a robust .NET backend with clean architecture principles.
+A full-stack cloud storage solution, featuring a React frontend and an ASP.NET REST backend following clean architecture principles, with comprehensive unit testing.  
+
+Try it here: (self-hosted, may not be running): https://www.natetp.duckdns.org/cloudy
 
 ## Features
 
-### **Completed Features**
 - **User Authentication System**
   - JWT-based authentication
   - User registration and login
   - Protected routes and middleware
   - Session management
+ 
+- **File Management**
+  - File uploading, storage, and deletion
+  - Organized per user
+  - Secure access control for files
 
 - **Modern React Frontend**
   - Responsive UI built with Tailwind CSS
@@ -18,20 +24,15 @@ A full-stack cloud storage solution built with modern technologies, featuring a 
   - Context-based state management
   - Custom hooks for business logic
 
-- **Clean .NET Backend**
+- **ASP.NET Backend**
   - Clean Architecture (Domain, Application, Infrastructure, API layers)
-  - Entity Framework Core with SQL Server
+  - Entity Framework Core with PostgreSQL
   - JWT token authentication
   - RESTful API endpoints
   - Comprehensive test coverage
-
-### **Work in Progress**
-- **Cloud Storage Core**
-  - File upload/download functionality
-  - Folder creation and management
-  - File organization and navigation
-  - Storage quota management
-  - File sharing and collaboration
+ 
+- **CI**
+  - Automated build and test on every pull request
 
 ##  Architecture
 
@@ -70,73 +71,32 @@ server/
 ## Tech Stack
 
 ### **Frontend**
-- **React 19** - Latest React with concurrent features
-- **TypeScript 5.8** - Type-safe development
-- **Vite** - Fast build tool and dev server
-- **Tailwind CSS 4** - Utility-first CSS framework
-- **React Router 6** - Client-side routing
-- **Radix UI** - Accessible component primitives
-- **Lucide React** - Icon library
+- React 19
+- TypeScript 5.8
+- Vite
 
 ### **Backend**
-- **.NET 9** - Latest .NET framework
-- **Entity Framework Core** - ORM for data access
-- **Postgres** - Database (with Docker support)
-- **JWT Bearer** - Stateless authentication
-- **Swagger/OpenAPI** - API documentation
-- **Clean Architecture** - Separation of concerns
+- .NET 9*
+- Entity Framework Core
+- Postgres
+- JWT Bearer
+- Swagger/OpenAPI
+- Clean Architecture
 
 ### **Development Tools**
-- **ESLint** - Code quality and consistency
-- **Prettier** - Code formatting
-- **Docker** - Containerized development environment
-- **Git** - Version control
-
-## Getting Started
-
-### **Prerequisites**
-- Node.js 18+ and npm
-- .NET 9 SDK
-- Docker and Docker Compose
+- Docker
 - Git
 
-### **Quick Start**
-
-TODO
-
-
-## Project Structure
-
-### **Key Directories**
-- `client/` - React frontend application
-- `server/` - .NET backend solution
-- `docs/` - Project documentation
-- `ops/` - Deployment and operations scripts
-
-### **Database**
-The application uses Postgres with Entity Framework Core. Database migrations are automatically applied on startup in development mode.
-
-### **Environment Configuration**
-- Frontend: Environment variables in `.env` files
-- Backend: `appsettings.json` and environment-specific overrides
-
 ## Testing
-
-### **Frontend Testing**
-- TODO
-
-### **Backend Testing**
-- Unit tests for domain logic
-- Integration tests for repositories
-- API tests for controllers
-- Test coverage for all layers
+- Test coverage for backend layers
 
 ## Deployment
-
+### **Hosting**
+- Self-hosted on a personal laptop using a reverse proxy
+  
 ### **Docker Support**
 - Multi-stage Docker builds for both frontend and backend
 - Docker Compose for local development
 - Production-ready containerization
 
-### **Environment Variables**
-- TODO: DESCRIBE THESE
+
