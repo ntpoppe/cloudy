@@ -2,7 +2,7 @@
 
 A full-stack cloud storage solution, featuring a React frontend and an ASP.NET REST backend following clean architecture principles, with comprehensive unit testing.  
 
-Try it here: (self-hosted, may not be running): https://www.natetp.duckdns.org/cloudy
+Try it here: (self-hosted, so the containers may not be running and restricts storage to 5MB.): https://www.natetp.duckdns.org/cloudy
 
 ## Features
 
