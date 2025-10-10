@@ -1,6 +1,6 @@
 using Cloudy.Domain.Entities;
 
-namespace Cloudy.Application.Interfaces;
+namespace Cloudy.Application.Interfaces.Repositories;
 
 public interface IFolderRepository
 {

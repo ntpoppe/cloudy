@@ -1,4 +1,4 @@
-using Cloudy.Application.Interfaces;
+using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

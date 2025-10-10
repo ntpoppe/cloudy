@@ -1,4 +1,5 @@
-using Cloudy.Application.Interfaces;
+using Cloudy.Application.Interfaces.Repositories;
+using Cloudy.Application.Interfaces.Services;
 using Cloudy.Domain.Entities;
 using Cloudy.Infrastructure.Data;
 using Cloudy.Infrastructure.Repositories;

@@ -1,5 +1,6 @@
 ﻿using Cloudy.Application.DTOs;
-using Cloudy.Application.Interfaces;
+using Cloudy.Application.Interfaces.Repositories;
+using Cloudy.Application.Interfaces.Services;
 using Cloudy.Infrastructure.Services;
 using Cloudy.Domain.ValueObjects;
 using FluentAssertions;

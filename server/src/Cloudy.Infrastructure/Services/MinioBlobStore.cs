@@ -1,6 +1,6 @@
 using Minio;
 using Minio.DataModel.Args;
-using Cloudy.Application.Interfaces;
+using Cloudy.Application.Interfaces.Services;
 
 namespace Cloudy.Infrastructure.Services;
 

@@ -1,6 +1,7 @@
 using Cloudy.Application.Mappers;
 using Cloudy.Application.DTOs;
-using Cloudy.Application.Interfaces;
+using Cloudy.Application.Interfaces.Repositories;
+using Cloudy.Application.Interfaces.Services;
 using Cloudy.Domain.Entities;
 
 namespace Cloudy.Infrastructure.Services;

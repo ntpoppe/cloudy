@@ -1,6 +1,6 @@
 using Cloudy.Application.DTOs;
 
-namespace Cloudy.Application.Interfaces;
+namespace Cloudy.Application.Interfaces.Services;
 
 public interface IUserService
 {

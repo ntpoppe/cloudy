@@ -1,6 +1,6 @@
 ﻿using Cloudy.API.Controllers;
 using Cloudy.Application.DTOs;
-using Cloudy.Application.Interfaces;
+using Cloudy.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 

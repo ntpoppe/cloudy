@@ -1,5 +1,6 @@
 using Cloudy.Application.DTOs;
-using Cloudy.Application.Interfaces;
+using Cloudy.Application.Interfaces.Services;
+using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 

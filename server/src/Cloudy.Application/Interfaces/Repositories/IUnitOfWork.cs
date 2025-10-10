@@ -1,4 +1,4 @@
-namespace Cloudy.Application.Interfaces;
+namespace Cloudy.Application.Interfaces.Repositories;
 public interface IUnitOfWork
 {
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
