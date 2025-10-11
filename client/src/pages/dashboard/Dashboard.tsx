@@ -304,6 +304,8 @@ export const Dashboard: React.FC = () => {
     setItems((arr) =>
       arr.map((it) => (selection.has(it.id) ? { ...it, trashed: true } : it))
     );
+    await Promise.all(selectedItems.map(item => fileService.markAsPendingDeletion(item.id)));
+
     setSelection(new Set());
 
     setActivities((a) => [{
@@ -360,6 +362,8 @@ export const Dashboard: React.FC = () => {
   async function restoreSelected() {
     if (selection.size === 0) return;
     setItems((arr) => arr.map((it) => (selection.has(it.id) ? { ...it, trashed: false } : it)));
+    await Promise.all(Array.from(selection).map(id => fileService.restoreFromPendingDeletion(id)));
+
     setSelection(new Set());
     setActivities((a) => [{ id: `ac_${Date.now()}`, message: `Restored ${selection.size} item(s)`, createdAt: new Date().toISOString() }, ...a]);
     

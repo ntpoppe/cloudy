@@ -29,6 +29,7 @@ export function mapServerFileToFileItem(
     uploadedAt: string;
     bucket: string;
     objectKey: string;
+    isPendingDeletion: boolean;
   },
   parentId: string | null = null
 ): FileItem {
@@ -40,7 +41,7 @@ export function mapServerFileToFileItem(
     updatedAt: new Date(serverFile.uploadedAt).toISOString(), // Ensure ISO format
     parentId: parentId,
     extension: serverFile.name.split(".").pop()?.toLowerCase(),
-    trashed: false
+    trashed: serverFile.isPendingDeletion
   };
 }
 
@@ -77,6 +78,7 @@ export const fileService = {
       uploadedAt: string;
       bucket: string;
       objectKey: string;
+      isPendingDeletion: boolean;
     }>(`/files/${fileId}/finalize`, payload);
     return mapServerFileToFileItem(serverFile);
   },
@@ -90,6 +92,7 @@ export const fileService = {
       uploadedAt: string;
       bucket: string;
       objectKey: string;
+      isPendingDeletion: boolean;
     }[]>('/files');
     return serverFiles.map(file => mapServerFileToFileItem(file));
   },
@@ -108,6 +111,14 @@ export const fileService = {
 
   async delete(id: string): Promise<void> {
     return await http.delete<void>(`/files/${id}`);
+  },
+
+  async markAsPendingDeletion(id: string): Promise<void> {
+    return await http.put<void>(`/files/${id}/mark-pending-deletion`);
+  },
+
+  async restoreFromPendingDeletion(id: string): Promise<void> {
+    return await http.put<void>(`/files/${id}/restore-pending-deletion`);
   },
 
   async getStorageUsage(): Promise<StorageUsage> {

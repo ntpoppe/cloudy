@@ -30,7 +30,18 @@ public class FileService : IFileService
         _maxStorageBytes = storageSettings.Value.MaxStorageBytes;
     }
 
-    // Create pre-signed PUT for client upload
+    /// <summary>
+    /// Create a presigned MinIO PUT for client upload.
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <param name="contentType"></param>
+    /// <param name="sizeBytes"></param>
+    /// <param name="userId"></param>
+    /// <param name="ttl"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
     public async Task<(string ObjectKey, string Url, int ExpiresInSeconds)>
         CreateUploadIntentAsync(string fileName, string contentType, long sizeBytes, int userId, TimeSpan ttl, CancellationToken ct = default)
     {
@@ -57,7 +68,18 @@ public class FileService : IFileService
         return (objectKey, url, (int)ttl.TotalSeconds);
     }
 
-    // Persist metadata after upload completed to MinIO
+    /// <summary>
+    /// Persist metadata after upload to MinIO.
+    /// </summary>
+    /// <param name="objectKey"></param>
+    /// <param name="originalName"></param>
+    /// <param name="contentType"></param>
+    /// <param name="sizeBytes"></param>
+    /// <param name="userId"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
     public async Task<FileDto> CreateMetadataAsync(
         string objectKey,
         string originalName,
@@ -87,6 +109,13 @@ public class FileService : IFileService
         return FileMapper.MapDto(file);
     }
 
+    /// <summary>
+    /// Gets a file by ID.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public async Task<FileDto> GetByIdAsync(int id, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(id, ct)
@@ -94,7 +123,14 @@ public class FileService : IFileService
         return FileMapper.MapDto(f);
     }
 
-    // Presigned GET for download
+    /// <summary>
+    /// Supplies a presigned MinIO GET request for download.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="ttl"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public async Task<string> GetDownloadUrlAsync(int id, TimeSpan ttl, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(id, ct)
@@ -104,7 +140,15 @@ public class FileService : IFileService
         return await _blobStore.GetPresignedGetUrlAsync(f.Bucket, f.ObjectKey, ttl);
     }
 
-    //  Rename (metadata only)
+    /// <summary>
+    /// Renames a file. Metadata only.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="userId"></param>
+    /// <param name="newName"></param>
+    /// <param name="ct"></param>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
     public async Task RenameAsync(int id, int userId, string newName, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(newName))
@@ -118,7 +162,13 @@ public class FileService : IFileService
         await _uow.SaveChangesAsync(ct);
     }
 
-    // Delete (MinIO + soft delete)
+    /// <summary>
+    /// Deletes a file from MinIO storage and metadata table.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="userId"></param>
+    /// <param name="ct"></param>
+    /// <exception cref="InvalidOperationException"></exception>
     public async Task DeleteAsync(int id, int userId, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(id, ct)
@@ -129,6 +179,40 @@ public class FileService : IFileService
 
         // Soft delete in DB
         f.SoftDelete(userId);
+        _fileRepo.Update(f);
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Marks a file as pending deletion. Shows up in trash on frontend.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="userId"></param>
+    /// <param name="ct"></param>
+    /// <exception cref="InvalidOperationException"></exception>
+    public async Task MarkAsPendingDeletionAsync(int id, int userId, CancellationToken ct = default)
+    {
+        var f = await _fileRepo.GetByIdAsync(id, ct)
+            ?? throw new InvalidOperationException("file not found");
+        
+        f.MarkAsPendingDeletion(userId);
+        _fileRepo.Update(f);
+        await _uow.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Restore a file from pending deletion.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="userId"></param>
+    /// <param name="ct"></param>
+    /// <exception cref="InvalidOperationException"></exception>
+    public async Task RestoreFromPendingDeletionAsync(int id, int userId, CancellationToken ct = default)
+    {
+        var f = await _fileRepo.GetByIdAsync(id, ct)
+            ?? throw new InvalidOperationException("file not found");
+        
+        f.RestoreFromPendingDeletion(userId);
         _fileRepo.Update(f);
         await _uow.SaveChangesAsync(ct);
     }

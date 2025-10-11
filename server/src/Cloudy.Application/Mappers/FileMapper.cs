@@ -12,6 +12,7 @@ public static class FileMapper
             file.Metadata.ContentType,
             file.Metadata.UploadedAt,
             file.Bucket,
-            file.ObjectKey
+            file.ObjectKey,
+            file.IsPendingDeletion
         );
 }

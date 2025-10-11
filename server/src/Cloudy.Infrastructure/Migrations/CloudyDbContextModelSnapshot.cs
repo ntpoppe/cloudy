@@ -49,6 +49,9 @@ namespace Cloudy.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsPendingDeletion")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -97,6 +100,9 @@ namespace Cloudy.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPendingDeletion")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Name")
