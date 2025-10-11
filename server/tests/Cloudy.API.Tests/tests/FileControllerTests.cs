@@ -92,7 +92,7 @@ public class FilesControllerTests
         // Arrange
         var fileId = "test-key";
         var request = new FilesController.FinalizeRequest("test-key", "test.txt", "text/plain", 1024);
-        var expectedDto = new FileDto(1, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key");
+        var expectedDto = new FileDto(1, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key", false);
 
         _fileService
             .Setup(s => s.CreateMetadataAsync(request.ObjectKey, request.OriginalName, request.ContentType, request.SizeBytes, It.IsAny<int>(), It.IsAny<CancellationToken>()))
@@ -224,8 +224,8 @@ public class FilesControllerTests
         // Arrange
         var expectedFiles = new List<FileDto>
         {
-            new(1, "file1.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "key1"),
-            new(2, "file2.pdf", 2048, "application/pdf", DateTime.UtcNow, "cloudy", "key2")
+            new(1, "file1.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "key1", false),
+            new(2, "file2.pdf", 2048, "application/pdf", DateTime.UtcNow, "cloudy", "key2", false)
         };
 
         _fileService
@@ -252,7 +252,7 @@ public class FilesControllerTests
     {
         // Arrange
         var fileId = 1;
-        var expectedFile = new FileDto(fileId, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key");
+        var expectedFile = new FileDto(fileId, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key", false);
 
         _fileService
             .Setup(s => s.GetByIdAsync(fileId, It.IsAny<CancellationToken>()))
@@ -370,7 +370,7 @@ public class FilesControllerTests
         var cts = new CancellationTokenSource();
         var expectedFiles = new List<FileDto>
         {
-            new(1, "file1.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "key1")
+            new(1, "file1.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "key1", false)
         };
 
         _fileService
@@ -391,7 +391,7 @@ public class FilesControllerTests
         // Arrange
         var fileId = 1;
         var cts = new CancellationTokenSource();
-        var expectedFile = new FileDto(fileId, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key");
+        var expectedFile = new FileDto(fileId, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key", false);
 
         _fileService
             .Setup(s => s.GetByIdAsync(fileId, cts.Token))

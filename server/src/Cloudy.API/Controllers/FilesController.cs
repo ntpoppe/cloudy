@@ -10,14 +10,8 @@ namespace Cloudy.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class FilesController : ControllerBase
+public class FilesController(IFileService fileService) : ControllerBase
 {
-    private readonly IFileService _fileService;
-
-    public FilesController(IFileService fileService)
-    {
-        _fileService = fileService;
-    }
 
     // Helper method to get current user ID
     protected virtual int GetCurrentUserId()
@@ -51,7 +45,7 @@ public class FilesController : ControllerBase
             ? "application/octet-stream"
             : req.ContentType;
 
-        var result = await _fileService.CreateUploadIntentAsync(
+        var result = await fileService.CreateUploadIntentAsync(
             req.FileName,
             contentType,
             req.SizeBytes,
@@ -74,14 +68,14 @@ public class FilesController : ControllerBase
             return BadRequest("ObjectKey and OriginalName required.");
 
         var userId = GetCurrentUserId();
-        var dto = await _fileService.CreateMetadataAsync(req.ObjectKey, req.OriginalName, req.ContentType, req.SizeBytes, userId, ct);
+        var dto = await fileService.CreateMetadataAsync(req.ObjectKey, req.OriginalName, req.ContentType, req.SizeBytes, userId, ct);
         return Ok(dto);
     }
 
     [HttpGet("{id:int}/download-url")]
     public async Task<ActionResult<string>> GetDownloadUrl([FromRoute] int id, CancellationToken ct)
     {
-        var url = await _fileService.GetDownloadUrlAsync(id, TimeSpan.FromMinutes(10), ct);
+        var url = await fileService.GetDownloadUrlAsync(id, TimeSpan.FromMinutes(10), ct);
         return Ok(url);
     }
 
@@ -93,7 +87,7 @@ public class FilesController : ControllerBase
             return BadRequest("NewName required.");
 
         var userId = GetCurrentUserId();
-        await _fileService.RenameAsync(id, userId, req.NewName, ct);
+        await fileService.RenameAsync(id, userId, req.NewName, ct);
         return NoContent();
     }
 
@@ -102,7 +96,25 @@ public class FilesController : ControllerBase
     public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
     {
         var userId = GetCurrentUserId();
-        await _fileService.DeleteAsync(id, userId, ct);
+        await fileService.DeleteAsync(id, userId, ct);
+        return NoContent();
+    }
+    
+    // Mark a file as pending deletion
+    [HttpPut("{id:int}/mark-pending-deletion")]
+    public async Task<IActionResult> MarkPendingDeletion([FromRoute] int id, CancellationToken ct)
+    {
+        var userId = GetCurrentUserId();
+        await fileService.MarkAsPendingDeletionAsync(id, userId, ct);
+        return NoContent();
+    }
+    
+    // Restore a file from pending deletion
+    [HttpPut("{id:int}/restore-pending-deletion")]
+    public async Task<IActionResult> RestorePendingDeletion([FromRoute] int id, CancellationToken ct)
+    {
+        var userId = GetCurrentUserId();
+        await fileService.RestoreFromPendingDeletionAsync(id, userId, ct);
         return NoContent();
     }
 
@@ -110,14 +122,14 @@ public class FilesController : ControllerBase
     public async Task<ActionResult<IEnumerable<FileDto>>> GetAll(CancellationToken ct)
     {
         var userId = GetCurrentUserId();
-        var files = await _fileService.GetAllAsync(userId, ct);
+        var files = await fileService.GetAllAsync(userId, ct);
         return Ok(files);
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<FileDto>> GetById(int id, CancellationToken ct)
     {
-        var file = await _fileService.GetByIdAsync(id, ct);
+        var file = await fileService.GetByIdAsync(id, ct);
         return Ok(file);
     }
 
@@ -125,7 +137,7 @@ public class FilesController : ControllerBase
     public async Task<ActionResult<StorageUsageDto>> GetStorageUsage(CancellationToken ct)
     {
         var userId = GetCurrentUserId();
-        var usage = await _fileService.GetStorageUsageAsync(userId, ct);
+        var usage = await fileService.GetStorageUsageAsync(userId, ct);
         return Ok(usage);
     }
 }

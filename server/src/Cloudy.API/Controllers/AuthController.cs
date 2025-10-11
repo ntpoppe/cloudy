@@ -9,17 +9,11 @@ namespace Cloudy.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(
+    IUserService userService, 
+    IJwtService jwtService
+) : ControllerBase
 {
-    private readonly IUserService _userService;
-    private readonly IJwtService _jwtService;
-
-    public AuthController(IUserService userService, IJwtService jwtService)
-    {
-        _userService = userService;
-        _jwtService = jwtService;
-    }
-
     [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<AuthenticationResponseDto>> RegisterAsync(RegisterDto dto)
@@ -27,8 +21,8 @@ public class AuthController : ControllerBase
         // Log entry to terminal
         Console.WriteLine("[AuthController] Register endpoint called");
 
-        var user = await _userService.RegisterAsync(dto);
-        var token = _jwtService.CreateToken(user.Id, user.Username);
+        var user = await userService.RegisterAsync(dto);
+        var token = jwtService.CreateToken(user.Id, user.Username);
 
         var userDto = new UserDto(user.Id, user.Username, user.Email);
         return Ok(new AuthenticationResponseDto(token, userDto));
@@ -38,11 +32,11 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<AuthenticationResponseDto>> LoginAsync(LoginDto dto)
     {
-        var user = await _userService.AuthenticateAsync(dto);
+        var user = await userService.AuthenticateAsync(dto);
         if (user is null)
             return Unauthorized();
 
-        var token = _jwtService.CreateToken(user.Id, user.Username);
+        var token = jwtService.CreateToken(user.Id, user.Username);
         var userDto = new UserDto(user.Id, user.Username, user.Email);
         return Ok(new AuthenticationResponseDto(token, userDto));
     }
@@ -56,7 +50,7 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out int userId))
             return Unauthorized();
 
-        var user = await _userService.GetByIdAsync(userId);
+        var user = await userService.GetByIdAsync(userId);
         if (user is null)
             return NotFound();
 

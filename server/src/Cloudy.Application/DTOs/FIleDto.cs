@@ -7,5 +7,6 @@ public record FileDto(
     string ContentType,
     DateTime UploadedAt,
     string Bucket,
-    string ObjectKey
+    string ObjectKey,
+    bool IsPendingDeletion
 );
