@@ -1,4 +1,5 @@
 using Cloudy.Application.DTOs;
+using Cloudy.Application.DTOs.Files;
 using Cloudy.Application.Interfaces.Services;
 using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Application.Mappers;
@@ -33,76 +34,51 @@ public class FileService : IFileService
     /// <summary>
     /// Create a presigned MinIO PUT for client upload.
     /// </summary>
-    /// <param name="fileName"></param>
-    /// <param name="contentType"></param>
-    /// <param name="sizeBytes"></param>
-    /// <param name="userId"></param>
-    /// <param name="ttl"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
-    /// <exception cref="InvalidOperationException"></exception>
-    public async Task<(string ObjectKey, string Url, int ExpiresInSeconds)>
-        CreateUploadIntentAsync(string fileName, string contentType, long sizeBytes, int userId, TimeSpan ttl, CancellationToken ct = default)
+    public async Task<CreateUploadIntentResponse> CreateUploadIntentAsync(CreateUploadIntentRequest request, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(fileName))
-            throw new ArgumentException("fileName is required.", nameof(fileName));
+        if (string.IsNullOrWhiteSpace(request.FileName))
+            throw new ArgumentException("FileName is required.", nameof(request));
 
         // Check storage quota
-        var canUpload = await CanUserUploadFileAsync(userId, sizeBytes, ct);
+        var canUpload = await CanUserUploadFileAsync(request.UserId, request.SizeBytes, ct);
         if (!canUpload)
         {
-            var currentUsage = await GetUserStorageUsageAsync(userId, ct);
-            var maxBytes = GetUserStorageLimit(userId);
+            var currentUsage = await GetUserStorageUsageAsync(request.UserId, ct);
+            var maxBytes = GetUserStorageLimit(request.UserId);
             var availableSpace = maxBytes - currentUsage;
             throw new InvalidOperationException(
                 $"Storage quota exceeded. Available space: {availableSpace / (1024 * 1024)}MB, " +
-                $"Requested: {sizeBytes / (1024 * 1024)}MB, " +
+                $"Requested: {request.SizeBytes / (1024 * 1024)}MB, " +
                 $"Total quota: {maxBytes / (1024 * 1024)}MB");
         }
 
-        var objectKey = $"{Guid.NewGuid()}-{fileName}";
+        var objectKey = $"{Guid.NewGuid()}-{request.FileName}";
 
         // MinIO pre-signed PUT
-        var url = await _blobStore.GetPresignedPutUrlAsync(_bucket, objectKey, ttl);
-        return (objectKey, url, (int)ttl.TotalSeconds);
+        var url = await _blobStore.GetPresignedPutUrlAsync(_bucket, objectKey, request.Ttl);
+        return new CreateUploadIntentResponse(objectKey, url, (int)request.Ttl.TotalSeconds);
     }
 
     /// <summary>
     /// Persist metadata after upload to MinIO.
     /// </summary>
-    /// <param name="objectKey"></param>
-    /// <param name="originalName"></param>
-    /// <param name="contentType"></param>
-    /// <param name="sizeBytes"></param>
-    /// <param name="userId"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
-    /// <exception cref="InvalidOperationException"></exception>
-    public async Task<FileDto> CreateMetadataAsync(
-        string objectKey,
-        string originalName,
-        string contentType,
-        long sizeBytes,
-        int userId,
-        CancellationToken ct = default)
+    public async Task<FileDto> CreateMetadataAsync(CreateMetadataRequest request, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(objectKey))
-            throw new ArgumentException("objectKey is required.", nameof(objectKey));
-        if (string.IsNullOrWhiteSpace(originalName))
-            throw new ArgumentException("originalName is required.", nameof(originalName));
+        if (string.IsNullOrWhiteSpace(request.ObjectKey))
+            throw new ArgumentException("ObjectKey is required.", nameof(request));
+        if (string.IsNullOrWhiteSpace(request.OriginalName))
+            throw new ArgumentException("OriginalName is required.", nameof(request));
 
         // Double-check quota before saving metadata
-        var canUpload = await CanUserUploadFileAsync(userId, sizeBytes, ct);
+        var canUpload = await CanUserUploadFileAsync(request.UserId, request.SizeBytes, ct);
         if (!canUpload)
         {
             throw new InvalidOperationException("Storage quota exceeded during metadata creation.");
         }
 
-        var metadata = new FileMetadata(contentType, DateTime.UtcNow);
-        var file = new Domain.Entities.File(originalName, sizeBytes, metadata, userId);
-        file.SetStorage(_bucket, objectKey);
+        var metadata = new FileMetadata(request.ContentType, DateTime.UtcNow);
+        var file = new Domain.Entities.File(request.OriginalName, request.SizeBytes, metadata, request.UserId);
+        file.SetStorage(_bucket, request.ObjectKey);
 
         await _fileRepo.AddAsync(file, ct);
         await _uow.SaveChangesAsync(ct);
@@ -126,38 +102,27 @@ public class FileService : IFileService
     /// <summary>
     /// Supplies a presigned MinIO GET request for download.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="ttl"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public async Task<string> GetDownloadUrlAsync(int id, TimeSpan ttl, CancellationToken ct = default)
+    public async Task<string> GetDownloadUrlAsync(GetDownloadUrlRequest request, CancellationToken ct = default)
     {
-        var f = await _fileRepo.GetByIdAsync(id, ct)
+        var f = await _fileRepo.GetByIdAsync(request.FileId, ct)
                 ?? throw new InvalidOperationException("file not found");
 
         // MinIO presigned GET
-        return await _blobStore.GetPresignedGetUrlAsync(f.Bucket, f.ObjectKey, ttl);
+        return await _blobStore.GetPresignedGetUrlAsync(f.Bucket, f.ObjectKey, request.Ttl);
     }
 
     /// <summary>
     /// Renames a file. Metadata only.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="userId"></param>
-    /// <param name="newName"></param>
-    /// <param name="ct"></param>
-    /// <exception cref="ArgumentException"></exception>
-    /// <exception cref="InvalidOperationException"></exception>
-    public async Task RenameAsync(int id, int userId, string newName, CancellationToken ct = default)
+    public async Task RenameAsync(RenameFileRequest request, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(newName))
-            throw new ArgumentException("newName is required.", nameof(newName));
+        if (string.IsNullOrWhiteSpace(request.NewName))
+            throw new ArgumentException("NewName is required.", nameof(request));
 
-        var f = await _fileRepo.GetByIdAsync(id, ct)
+        var f = await _fileRepo.GetByIdAsync(request.FileId, ct)
                 ?? throw new InvalidOperationException("file not found");
 
-        f.Rename(newName, userId);
+        f.Rename(request.NewName, request.UserId);
         _fileRepo.Update(f);
         await _uow.SaveChangesAsync(ct);
     }
@@ -165,20 +130,16 @@ public class FileService : IFileService
     /// <summary>
     /// Deletes a file from MinIO storage and metadata table.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="userId"></param>
-    /// <param name="ct"></param>
-    /// <exception cref="InvalidOperationException"></exception>
-    public async Task DeleteAsync(int id, int userId, CancellationToken ct = default)
+    public async Task DeleteAsync(DeleteFileRequest request, CancellationToken ct = default)
     {
-        var f = await _fileRepo.GetByIdAsync(id, ct)
+        var f = await _fileRepo.GetByIdAsync(request.FileId, ct)
                 ?? throw new InvalidOperationException("file not found");
 
         // Remove from MinIO
         await _blobStore.DeleteAsync(f.Bucket, f.ObjectKey);
 
         // Soft delete in DB
-        f.SoftDelete(userId);
+        f.SoftDelete(request.UserId);
         _fileRepo.Update(f);
         await _uow.SaveChangesAsync(ct);
     }

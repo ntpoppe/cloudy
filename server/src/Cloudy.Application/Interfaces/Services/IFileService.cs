@@ -1,24 +1,16 @@
 using Cloudy.Application.DTOs;
+using Cloudy.Application.DTOs.Files;
 
 namespace Cloudy.Application.Interfaces.Services;
 
 public interface IFileService
 {
-    Task<(string ObjectKey, string Url, int ExpiresInSeconds)>
-        CreateUploadIntentAsync(string fileName, string contentType, long sizeBytes, int userId, TimeSpan ttl, CancellationToken ct = default);
-
-    Task<FileDto> CreateMetadataAsync(
-        string objectKey,
-        string originalName,
-        string contentType,
-        long sizeBytes,
-        int userId,
-        CancellationToken ct = default);
-
+    Task<CreateUploadIntentResponse> CreateUploadIntentAsync(CreateUploadIntentRequest request, CancellationToken ct = default);
+    Task<FileDto> CreateMetadataAsync(CreateMetadataRequest request, CancellationToken ct = default);
     Task<FileDto> GetByIdAsync(int id, CancellationToken ct = default);
-    Task<string> GetDownloadUrlAsync(int id, TimeSpan ttl, CancellationToken ct = default);
-    Task RenameAsync(int id, int userId, string newName, CancellationToken ct = default);
-    Task DeleteAsync(int id, int userId, CancellationToken ct = default);
+    Task<string> GetDownloadUrlAsync(GetDownloadUrlRequest request, CancellationToken ct = default);
+    Task RenameAsync(RenameFileRequest request, CancellationToken ct = default);
+    Task DeleteAsync(DeleteFileRequest request, CancellationToken ct = default);
     Task MarkAsPendingDeletionAsync(int id, int userId, CancellationToken ct = default);
     Task RestoreFromPendingDeletionAsync(int id, int userId, CancellationToken ct = default);
     Task<IEnumerable<FileDto>> GetAllAsync(int userId, CancellationToken ct = default);

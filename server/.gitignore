@@ -62,3 +62,4 @@ logs
 .idea/
 Cloudy.sln.DotSettings.user
 .targets
+.vs/

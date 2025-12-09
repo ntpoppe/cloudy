@@ -1,5 +1,7 @@
 using Cloudy.API.Controllers;
+using Cloudy.API.Requests.Files;
 using Cloudy.Application.DTOs;
+using Cloudy.Application.DTOs.Files;
 using Cloudy.Application.Interfaces.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
@@ -29,33 +31,36 @@ public class FilesControllerTests
     public async Task CreateIntent_Should_Return_Ok_With_PresignedUrl()
     {
         // Arrange
-        var request = new FilesController.CreateIntentRequest("test.txt", "text/plain", 1024);
+        var request = new CreateIntentRequest("test.txt", "text/plain", 1024);
         var expectedObjectKey = "guid-test.txt";
         var expectedUrl = "https://presigned-put-url";
         var expectedTtl = 600;
+        var expectedResponse = new CreateUploadIntentResponse(expectedObjectKey, expectedUrl, expectedTtl);
 
         _fileService
-            .Setup(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((expectedObjectKey, expectedUrl, expectedTtl));
+            .Setup(s => s.CreateUploadIntentAsync(It.IsAny<CreateUploadIntentRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResponse);
 
         // Act
         var actionResult = await _controller.CreateIntent(request, CancellationToken.None);
 
         // Assert
         var result = actionResult.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = result.Value.Should().BeOfType<FilesController.CreateIntentResponse>().Subject;
+        var response = result.Value.Should().BeOfType<CreateIntentResponse>().Subject;
         
         response.UploadUrl.Should().Be(expectedUrl);
         response.FileId.Should().Be(expectedObjectKey);
 
-        _fileService.Verify(s => s.CreateUploadIntentAsync(request.FileName, request.ContentType, 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.CreateUploadIntentAsync(
+            It.Is<CreateUploadIntentRequest>(r => r.FileName == request.FileName && r.SizeBytes == request.SizeBytes), 
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task CreateIntent_Should_Return_BadRequest_If_FileName_Empty()
     {
         // Arrange
-        var request = new FilesController.CreateIntentRequest("", "text/plain", 1024);
+        var request = new CreateIntentRequest("", "text/plain", 1024);
 
         // Act
         var actionResult = await _controller.CreateIntent(request, CancellationToken.None);
@@ -69,21 +74,24 @@ public class FilesControllerTests
     public async Task CreateIntent_Should_Use_Default_ContentType_If_Empty()
     {
         // Arrange
-        var request = new FilesController.CreateIntentRequest("test.txt", "", 1024);
+        var request = new CreateIntentRequest("test.txt", "", 1024);
         var expectedObjectKey = "guid-test.txt";
         var expectedUrl = "https://presigned-put-url";
         var expectedTtl = 600;
+        var expectedResponse = new CreateUploadIntentResponse(expectedObjectKey, expectedUrl, expectedTtl);
 
         _fileService
-            .Setup(s => s.CreateUploadIntentAsync(request.FileName, "application/octet-stream", 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((expectedObjectKey, expectedUrl, expectedTtl));
+            .Setup(s => s.CreateUploadIntentAsync(It.IsAny<CreateUploadIntentRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResponse);
 
         // Act
         var actionResult = await _controller.CreateIntent(request, CancellationToken.None);
 
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
-        _fileService.Verify(s => s.CreateUploadIntentAsync(request.FileName, "application/octet-stream", 1024, 1, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.CreateUploadIntentAsync(
+            It.Is<CreateUploadIntentRequest>(r => r.ContentType == "application/octet-stream"), 
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -91,11 +99,11 @@ public class FilesControllerTests
     {
         // Arrange
         var fileId = "test-key";
-        var request = new FilesController.FinalizeRequest("test-key", "test.txt", "text/plain", 1024);
+        var request = new FinalizeRequest("test-key", "test.txt", "text/plain", 1024);
         var expectedDto = new FileDto(1, "test.txt", 1024, "text/plain", DateTime.UtcNow, "cloudy", "test-key", false);
 
         _fileService
-            .Setup(s => s.CreateMetadataAsync(request.ObjectKey, request.OriginalName, request.ContentType, request.SizeBytes, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateMetadataAsync(It.IsAny<CreateMetadataRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedDto);
 
         // Act
@@ -108,7 +116,9 @@ public class FilesControllerTests
         response.Id.Should().Be(expectedDto.Id);
         response.Name.Should().Be(expectedDto.Name);
 
-        _fileService.Verify(s => s.CreateMetadataAsync(request.ObjectKey, request.OriginalName, request.ContentType, request.SizeBytes, It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.CreateMetadataAsync(
+            It.Is<CreateMetadataRequest>(r => r.ObjectKey == request.ObjectKey && r.OriginalName == request.OriginalName), 
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -116,7 +126,7 @@ public class FilesControllerTests
     {
         // Arrange
         var fileId = "test-key";
-        var request = new FilesController.FinalizeRequest("", "test.txt", "text/plain", 1024);
+        var request = new FinalizeRequest("", "test.txt", "text/plain", 1024);
 
         // Act
         var actionResult = await _controller.Finalize(fileId, request, CancellationToken.None);
@@ -131,7 +141,7 @@ public class FilesControllerTests
     {
         // Arrange
         var fileId = "test-key";
-        var request = new FilesController.FinalizeRequest("test-key", "", "text/plain", 1024);
+        var request = new FinalizeRequest("test-key", "", "text/plain", 1024);
 
         // Act
         var actionResult = await _controller.Finalize(fileId, request, CancellationToken.None);
@@ -149,7 +159,7 @@ public class FilesControllerTests
         var expectedUrl = "https://presigned-get-url";
 
         _fileService
-            .Setup(s => s.GetDownloadUrlAsync(fileId, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetDownloadUrlAsync(It.IsAny<GetDownloadUrlRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedUrl);
 
         // Act
@@ -161,7 +171,9 @@ public class FilesControllerTests
         
         response.Should().Be(expectedUrl);
 
-        _fileService.Verify(s => s.GetDownloadUrlAsync(fileId, TimeSpan.FromMinutes(10), It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.GetDownloadUrlAsync(
+            It.Is<GetDownloadUrlRequest>(r => r.FileId == fileId), 
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -169,10 +181,10 @@ public class FilesControllerTests
     {
         // Arrange
         var fileId = 1;
-        var request = new FilesController.RenameRequest("new-name.txt");
+        var request = new RenameRequest("new-name.txt");
 
         _fileService
-            .Setup(s => s.RenameAsync(fileId, 1, request.NewName, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RenameAsync(It.IsAny<RenameFileRequest>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -181,7 +193,9 @@ public class FilesControllerTests
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
 
-        _fileService.Verify(s => s.RenameAsync(fileId, 1, request.NewName, It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.RenameAsync(
+            It.Is<RenameFileRequest>(r => r.FileId == fileId && r.NewName == request.NewName), 
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -189,7 +203,7 @@ public class FilesControllerTests
     {
         // Arrange
         var fileId = 1;
-        var request = new FilesController.RenameRequest("");
+        var request = new RenameRequest("");
 
         // Act
         var actionResult = await _controller.Rename(fileId, request, CancellationToken.None);
@@ -206,7 +220,7 @@ public class FilesControllerTests
         var fileId = 1;
 
         _fileService
-            .Setup(s => s.DeleteAsync(fileId, 1, It.IsAny<CancellationToken>()))
+            .Setup(s => s.DeleteAsync(It.IsAny<DeleteFileRequest>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -215,7 +229,9 @@ public class FilesControllerTests
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
 
-        _fileService.Verify(s => s.DeleteAsync(fileId, 1, It.IsAny<CancellationToken>()), Times.Once);
+        _fileService.Verify(s => s.DeleteAsync(
+            It.Is<DeleteFileRequest>(r => r.FileId == fileId), 
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -276,18 +292,12 @@ public class FilesControllerTests
     public async Task CreateIntent_Should_Propagate_CancellationToken()
     {
         // Arrange
-        var request = new FilesController.CreateIntentRequest("test.txt", "text/plain", 1024);
+        var request = new CreateIntentRequest("test.txt", "text/plain", 1024);
         using var cts = new CancellationTokenSource();
-        var expected = ("guid-test.txt", "https://presigned-put-url", 600);
+        var expected = new CreateUploadIntentResponse("guid-test.txt", "https://presigned-put-url", 600);
 
         _fileService
-            .Setup(s => s.CreateUploadIntentAsync(
-                request.FileName,
-                request.ContentType,
-                request.SizeBytes,
-                1,
-                TimeSpan.FromMinutes(10),
-                cts.Token))
+            .Setup(s => s.CreateUploadIntentAsync(It.IsAny<CreateUploadIntentRequest>(), cts.Token))
             .ReturnsAsync(expected);
 
         // Act
@@ -296,11 +306,7 @@ public class FilesControllerTests
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
         _fileService.Verify(s => s.CreateUploadIntentAsync(
-            request.FileName,
-            request.ContentType,
-            request.SizeBytes,
-            1,
-            TimeSpan.FromMinutes(10),
+            It.IsAny<CreateUploadIntentRequest>(),
             It.Is<CancellationToken>(t => t == cts.Token)), Times.Once);
     }
 
@@ -313,7 +319,7 @@ public class FilesControllerTests
         var expectedUrl = "https://presigned-get-url";
 
         _fileService
-            .Setup(s => s.GetDownloadUrlAsync(fileId, TimeSpan.FromMinutes(10), cts.Token))
+            .Setup(s => s.GetDownloadUrlAsync(It.IsAny<GetDownloadUrlRequest>(), cts.Token))
             .ReturnsAsync(expectedUrl);
 
         // Act
@@ -321,7 +327,9 @@ public class FilesControllerTests
 
         // Assert
         actionResult.Result.Should().BeOfType<OkObjectResult>();
-        _fileService.Verify(s => s.GetDownloadUrlAsync(fileId, TimeSpan.FromMinutes(10), cts.Token), Times.Once);
+        _fileService.Verify(s => s.GetDownloadUrlAsync(
+            It.Is<GetDownloadUrlRequest>(r => r.FileId == fileId), 
+            cts.Token), Times.Once);
     }
 
     [Fact]
@@ -329,11 +337,11 @@ public class FilesControllerTests
     {
         // Arrange
         var fileId = 1;
-        var request = new FilesController.RenameRequest("new-name.txt");
+        var request = new RenameRequest("new-name.txt");
         var cts = new CancellationTokenSource();
 
         _fileService
-            .Setup(s => s.RenameAsync(fileId, 1, request.NewName, cts.Token))
+            .Setup(s => s.RenameAsync(It.IsAny<RenameFileRequest>(), cts.Token))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -341,7 +349,9 @@ public class FilesControllerTests
 
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
-        _fileService.Verify(s => s.RenameAsync(fileId, 1, request.NewName, cts.Token), Times.Once);
+        _fileService.Verify(s => s.RenameAsync(
+            It.Is<RenameFileRequest>(r => r.FileId == fileId && r.NewName == request.NewName), 
+            cts.Token), Times.Once);
     }
 
     [Fact]
@@ -352,7 +362,7 @@ public class FilesControllerTests
         var cts = new CancellationTokenSource();
 
         _fileService
-            .Setup(s => s.DeleteAsync(fileId, 1, cts.Token))
+            .Setup(s => s.DeleteAsync(It.IsAny<DeleteFileRequest>(), cts.Token))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -360,7 +370,9 @@ public class FilesControllerTests
 
         // Assert
         actionResult.Should().BeOfType<NoContentResult>();
-        _fileService.Verify(s => s.DeleteAsync(fileId, 1, cts.Token), Times.Once);
+        _fileService.Verify(s => s.DeleteAsync(
+            It.Is<DeleteFileRequest>(r => r.FileId == fileId), 
+            cts.Token), Times.Once);
     }
 
     [Fact]

@@ -2,8 +2,6 @@ using Cloudy.Application.DTOs;
 using Cloudy.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace Cloudy.API.Controllers;
 
@@ -12,7 +10,7 @@ namespace Cloudy.API.Controllers;
 public class AuthController(
     IUserService userService, 
     IJwtService jwtService
-) : ControllerBase
+) : BaseController
 {
     [AllowAnonymous]
     [HttpPost("register")]
@@ -45,11 +43,7 @@ public class AuthController(
     [HttpGet("me")]
     public async Task<ActionResult<UserDto>> MeAsync()
     {
-        string? userIdValue = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out int userId))
-            return Unauthorized();
-
+        var userId = GetCurrentUserId();
         var user = await userService.GetByIdAsync(userId);
         if (user is null)
             return NotFound();

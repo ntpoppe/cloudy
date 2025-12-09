@@ -1,4 +1,5 @@
 ﻿using Cloudy.Application.DTOs;
+using Cloudy.Application.DTOs.Files;
 using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Application.Interfaces.Services;
 using Cloudy.Infrastructure.Services;
@@ -41,9 +42,10 @@ public class FileServiceTests
         var sut = CreateSut();
 
         var userId = 1;
+        var request = new CreateUploadIntentRequest(fileName, contentType, 1024, userId, ttl);
 
         // Act
-        var result = await sut.CreateUploadIntentAsync(fileName, contentType, 1024, userId, ttl, CancellationToken.None);
+        var result = await sut.CreateUploadIntentAsync(request, CancellationToken.None);
 
         // Assert
         result.ObjectKey.Should().Contain(fileName);
@@ -59,9 +61,10 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.CreateUploadIntentAsync("", "text/plain", 1024, 1, TimeSpan.FromMinutes(5), CancellationToken.None))
+        var request = new CreateUploadIntentRequest("", "text/plain", 1024, 1, TimeSpan.FromMinutes(5));
+        await sut.Invoking(s => s.CreateUploadIntentAsync(request, CancellationToken.None))
             .Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*fileName is required*");
+            .WithMessage("*FileName is required*");
     }
 
     [Fact]
@@ -80,9 +83,10 @@ public class FileServiceTests
             .ReturnsAsync(1);
 
         var sut = CreateSut();
+        var request = new CreateMetadataRequest(storageKey, originalName, contentType, sizeBytes, userId);
 
         // Act
-        var result = await sut.CreateMetadataAsync(storageKey, originalName, contentType, sizeBytes, userId);
+        var result = await sut.CreateMetadataAsync(request);
 
         // Assert
         result.Should().NotBeNull();
@@ -105,9 +109,10 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.CreateMetadataAsync("", "test.txt", "text/plain", 1024, 1))
+        var request = new CreateMetadataRequest("", "test.txt", "text/plain", 1024, 1);
+        await sut.Invoking(s => s.CreateMetadataAsync(request))
             .Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*objectKey is required*");
+            .WithMessage("*ObjectKey is required*");
     }
 
     [Fact]
@@ -117,9 +122,10 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.CreateMetadataAsync("key", "", "text/plain", 1024, 1))
+        var request = new CreateMetadataRequest("key", "", "text/plain", 1024, 1);
+        await sut.Invoking(s => s.CreateMetadataAsync(request))
             .Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*originalName is required*");
+            .WithMessage("*OriginalName is required*");
     }
 
     [Fact]
@@ -177,9 +183,10 @@ public class FileServiceTests
             .ReturnsAsync(expectedUrl);
 
         var sut = CreateSut();
+        var request = new GetDownloadUrlRequest(1, ttl);
 
         // Act
-        var result = await sut.GetDownloadUrlAsync(1, ttl);
+        var result = await sut.GetDownloadUrlAsync(request);
 
         // Assert
         result.Should().Be(expectedUrl);
@@ -196,7 +203,8 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.GetDownloadUrlAsync(1, TimeSpan.FromMinutes(5)))
+        var request = new GetDownloadUrlRequest(1, TimeSpan.FromMinutes(5));
+        await sut.Invoking(s => s.GetDownloadUrlAsync(request))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*file not found*");
     }
@@ -214,9 +222,10 @@ public class FileServiceTests
             .ReturnsAsync(1);
 
         var sut = CreateSut();
+        var request = new RenameFileRequest(1, 1, "new.txt");
 
         // Act
-        await sut.RenameAsync(1, 1, "new.txt");
+        await sut.RenameAsync(request);
 
         // Assert
         file.Name.Should().Be("new.txt");
@@ -231,9 +240,10 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.RenameAsync(1, 1, ""))
+        var request = new RenameFileRequest(1, 1, "");
+        await sut.Invoking(s => s.RenameAsync(request))
             .Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*newName is required*");
+            .WithMessage("*NewName is required*");
     }
 
     [Fact]
@@ -246,7 +256,8 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.RenameAsync(1, 1, "new.txt"))
+        var request = new RenameFileRequest(1, 1, "new.txt");
+        await sut.Invoking(s => s.RenameAsync(request))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*file not found*");
     }
@@ -267,9 +278,10 @@ public class FileServiceTests
             .ReturnsAsync(1);
 
         var sut = CreateSut();
+        var request = new DeleteFileRequest(1, 1);
 
         // Act
-        await sut.DeleteAsync(1, 1);
+        await sut.DeleteAsync(request);
 
         // Assert
         file.IsDeleted.Should().BeTrue();
@@ -288,7 +300,8 @@ public class FileServiceTests
         var sut = CreateSut();
 
         // Act & Assert
-        await sut.Invoking(s => s.DeleteAsync(1, 1))
+        var request = new DeleteFileRequest(1, 1);
+        await sut.Invoking(s => s.DeleteAsync(request))
             .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*file not found*");
     }
