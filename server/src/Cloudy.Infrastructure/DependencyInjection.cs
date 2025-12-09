@@ -1,5 +1,6 @@
 using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Application.Interfaces.Services;
+using Cloudy.Application.Services;
 using Cloudy.Domain.Entities;
 using Cloudy.Infrastructure.Data;
 using Cloudy.Infrastructure.Repositories;
@@ -29,11 +30,9 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
 
-        // Services
-        services.AddScoped<IFileService, FileService>();
-        services.AddScoped<IFolderService, FolderService>();
-        services.AddScoped<IUserService, UserService>();
+        // Password Hasher (Infrastructure adapter)
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+        services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
 
         // MinIO
         var minioOpts = config.GetSection("Minio").Get<MinioSettings>()
@@ -50,12 +49,52 @@ public static class DependencyInjection
 
         services.AddScoped<IBlobStore, MinioBlobStore>();
 
-        // Jwt
-        services.Configure<JwtSettings>(config.GetSection("Jwt"));
-        services.AddSingleton<IJwtService, JwtService>();
+        // Application Services (wired with Infrastructure settings)
+        var storageOpts = config.GetSection("Storage").Get<StorageSettings>()
+           ?? throw new InvalidOperationException("Missing Storage config");
+        
+        services.AddScoped<IFileService>(sp =>
+        {
+            var fileRepo = sp.GetRequiredService<IFileRepository>();
+            var uow = sp.GetRequiredService<IUnitOfWork>();
+            var blobStore = sp.GetRequiredService<IBlobStore>();
+            
+            return new Application.Services.FileService(
+                fileRepo,
+                uow,
+                blobStore,
+                minioOpts.Bucket,
+                storageOpts.MaxStorageBytes
+            );
+        });
 
-        // Storage
-        services.Configure<StorageSettings>(config.GetSection("Storage"));
+        services.AddScoped<IFolderService>(sp =>
+        {
+            var folderRepo = sp.GetRequiredService<IFolderRepository>();
+            var uow = sp.GetRequiredService<IUnitOfWork>();
+            
+            return new Application.Services.FolderService(folderRepo, uow);
+        });
+
+        services.AddScoped<IUserService>(sp =>
+        {
+            var userRepo = sp.GetRequiredService<IUserRepository>();
+            var passwordHasher = sp.GetRequiredService<IPasswordHasher>();
+            
+            return new Application.Services.UserService(userRepo, passwordHasher);
+        });
+
+        // JWT Service
+        var jwtOpts = config.GetSection("Jwt").Get<JwtSettings>()
+           ?? throw new InvalidOperationException("Missing Jwt config");
+        
+        services.AddSingleton<IJwtService>(_ =>
+            new Application.Services.JwtService(
+                jwtOpts.Key,
+                jwtOpts.Issuer,
+                jwtOpts.Audience,
+                jwtOpts.ExpiryMinutes
+            ));
 
         return services;
     }

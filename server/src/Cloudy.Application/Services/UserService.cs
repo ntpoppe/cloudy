@@ -2,18 +2,17 @@ using Cloudy.Application.DTOs;
 using Cloudy.Application.Interfaces.Services;
 using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
 
-namespace Cloudy.Infrastructure.Services;
+namespace Cloudy.Application.Services;
 
 public class UserService : IUserService
 {
     private readonly IUserRepository _repo;
-    private readonly IPasswordHasher<User> _hasher;
+    private readonly IPasswordHasher _hasher;
 
-    public UserService(IUserRepository repo, IPasswordHasher<User> hasher)
+    public UserService(IUserRepository repo, IPasswordHasher hasher)
     {
-        _repo   = repo;
+        _repo = repo;
         _hasher = hasher;
     }
 
@@ -49,3 +48,4 @@ public class UserService : IUserService
             : new UserDto(user.Id, user.Username, user.Email);
     }
 }
+

@@ -4,10 +4,8 @@ using Cloudy.Application.Interfaces.Services;
 using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Application.Mappers;
 using Cloudy.Domain.ValueObjects;
-using Cloudy.Infrastructure.Settings;
-using Microsoft.Extensions.Options;
 
-namespace Cloudy.Infrastructure.Services;
+namespace Cloudy.Application.Services;
 
 public class FileService : IFileService
 {
@@ -21,18 +19,18 @@ public class FileService : IFileService
         IFileRepository fileRepo,
         IUnitOfWork uow,
         IBlobStore blobStore,
-        IOptions<MinioSettings> minioSettings,
-        IOptions<StorageSettings> storageSettings)
+        string bucket,
+        long maxStorageBytes)
     {
         _fileRepo = fileRepo;
         _uow = uow;
         _blobStore = blobStore;
-        _bucket = minioSettings.Value.Bucket;
-        _maxStorageBytes = storageSettings.Value.MaxStorageBytes;
+        _bucket = bucket;
+        _maxStorageBytes = maxStorageBytes;
     }
 
     /// <summary>
-    /// Create a presigned MinIO PUT for client upload.
+    /// Create a presigned PUT URL for client upload.
     /// </summary>
     public async Task<CreateUploadIntentResponse> CreateUploadIntentAsync(CreateUploadIntentRequest request, CancellationToken ct = default)
     {
@@ -54,13 +52,13 @@ public class FileService : IFileService
 
         var objectKey = $"{Guid.NewGuid()}-{request.FileName}";
 
-        // MinIO pre-signed PUT
+        // Get presigned PUT URL
         var url = await _blobStore.GetPresignedPutUrlAsync(_bucket, objectKey, request.Ttl);
         return new CreateUploadIntentResponse(objectKey, url, (int)request.Ttl.TotalSeconds);
     }
 
     /// <summary>
-    /// Persist metadata after upload to MinIO.
+    /// Persist metadata after upload to blob storage.
     /// </summary>
     public async Task<FileDto> CreateMetadataAsync(CreateMetadataRequest request, CancellationToken ct = default)
     {
@@ -88,10 +86,6 @@ public class FileService : IFileService
     /// <summary>
     /// Gets a file by ID.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
     public async Task<FileDto> GetByIdAsync(int id, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(id, ct)
@@ -100,14 +94,13 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Supplies a presigned MinIO GET request for download.
+    /// Supplies a presigned GET URL for download.
     /// </summary>
     public async Task<string> GetDownloadUrlAsync(GetDownloadUrlRequest request, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(request.FileId, ct)
                 ?? throw new InvalidOperationException("file not found");
 
-        // MinIO presigned GET
         return await _blobStore.GetPresignedGetUrlAsync(f.Bucket, f.ObjectKey, request.Ttl);
     }
 
@@ -128,14 +121,14 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Deletes a file from MinIO storage and metadata table.
+    /// Deletes a file from blob storage and metadata table.
     /// </summary>
     public async Task DeleteAsync(DeleteFileRequest request, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(request.FileId, ct)
                 ?? throw new InvalidOperationException("file not found");
 
-        // Remove from MinIO
+        // Remove from blob storage
         await _blobStore.DeleteAsync(f.Bucket, f.ObjectKey);
 
         // Soft delete in DB
@@ -147,10 +140,6 @@ public class FileService : IFileService
     /// <summary>
     /// Marks a file as pending deletion. Shows up in trash on frontend.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="userId"></param>
-    /// <param name="ct"></param>
-    /// <exception cref="InvalidOperationException"></exception>
     public async Task MarkAsPendingDeletionAsync(int id, int userId, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(id, ct)
@@ -164,10 +153,6 @@ public class FileService : IFileService
     /// <summary>
     /// Restore a file from pending deletion.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="userId"></param>
-    /// <param name="ct"></param>
-    /// <exception cref="InvalidOperationException"></exception>
     public async Task RestoreFromPendingDeletionAsync(int id, int userId, CancellationToken ct = default)
     {
         var f = await _fileRepo.GetByIdAsync(id, ct)
@@ -210,4 +195,5 @@ public class FileService : IFileService
 
     private long GetUserStorageLimit(int userId)
         => userId == 1 ? 250L * 1024 * 1024 * 1024 : _maxStorageBytes;
-    }
+}
+

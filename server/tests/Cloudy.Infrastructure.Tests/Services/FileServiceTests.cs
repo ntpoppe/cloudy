@@ -2,12 +2,10 @@
 using Cloudy.Application.DTOs.Files;
 using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Application.Interfaces.Services;
-using Cloudy.Infrastructure.Services;
+using Cloudy.Application.Services;
 using Cloudy.Domain.ValueObjects;
 using FluentAssertions;
 using Moq;
-using Microsoft.Extensions.Options;
-using Cloudy.Infrastructure.Settings;
 using File = Cloudy.Domain.Entities.File;
 
 namespace Cloudy.Infrastructure.Tests.Services;
@@ -17,14 +15,15 @@ public class FileServiceTests
     private readonly Mock<IFileRepository> _fileRepo = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly Mock<IBlobStore> _blobStore = new();
-    private readonly Mock<IOptions<MinioSettings>> _minioSettings = new();
-    private readonly Mock<IOptions<StorageSettings>> _storageSettings = new();
 
     private FileService CreateSut()
     {
-        _minioSettings.Setup(x => x.Value).Returns(new MinioSettings { Bucket = "test-bucket" });
-        _storageSettings.Setup(x => x.Value).Returns(new StorageSettings { MaxStorageBytes = 1024 * 1024 * 1024 });
-        return new FileService(_fileRepo.Object, _uow.Object, _blobStore.Object, _minioSettings.Object, _storageSettings.Object);
+        return new FileService(
+            _fileRepo.Object, 
+            _uow.Object, 
+            _blobStore.Object, 
+            "test-bucket", 
+            1024 * 1024 * 1024);
     }
 
     [Fact]

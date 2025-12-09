@@ -1,5 +1,5 @@
 using Cloudy.Application.Interfaces.Repositories;
-using Cloudy.Infrastructure.Services;
+using Cloudy.Application.Services;
 using Cloudy.Domain.Entities;
 using FluentAssertions;
 using Moq;

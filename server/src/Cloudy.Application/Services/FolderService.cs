@@ -2,9 +2,8 @@ using Cloudy.Application.Mappers;
 using Cloudy.Application.DTOs;
 using Cloudy.Application.Interfaces.Repositories;
 using Cloudy.Application.Interfaces.Services;
-using Cloudy.Domain.Entities;
 
-namespace Cloudy.Infrastructure.Services;
+namespace Cloudy.Application.Services;
 
 public class FolderService : IFolderService
 {
@@ -19,7 +18,7 @@ public class FolderService : IFolderService
 
     public async Task<FolderDto> CreateAsync(string name, int? parentFolderId = null, CancellationToken cancellationToken = default)
     {
-        var folder = new Folder(name, parentFolderId);
+        var folder = new Domain.Entities.Folder(name, parentFolderId);
         await _folderRepo.AddAsync(folder, cancellationToken);
         await _uow.SaveChangesAsync(cancellationToken);
         return FolderMapper.MapDto(folder);
@@ -67,3 +66,4 @@ public class FolderService : IFolderService
         ));
     }
 }
+

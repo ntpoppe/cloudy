@@ -2,19 +2,23 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Cloudy.Application.Interfaces.Services;
-using Cloudy.Infrastructure.Settings;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Cloudy.Infrastructure.Services;
+namespace Cloudy.Application.Services;
 
 public class JwtService : IJwtService
 {
-    private readonly JwtSettings _settings;
+    private readonly string _key;
+    private readonly string _issuer;
+    private readonly string _audience;
+    private readonly int _expiryMinutes;
 
-    public JwtService(IOptions<JwtSettings> opts)
+    public JwtService(string key, string issuer, string audience, int expiryMinutes)
     {
-        _settings = opts.Value;
+        _key = key;
+        _issuer = issuer;
+        _audience = audience;
+        _expiryMinutes = expiryMinutes;
     }
 
     public string CreateToken(int userId, string userName)
@@ -25,17 +29,18 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.UniqueName, userName)
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _settings.Issuer,
-            audience: _settings.Audience,
+            issuer: _issuer,
+            audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_settings.ExpiryMinutes),
+            expires: DateTime.UtcNow.AddMinutes(_expiryMinutes),
             signingCredentials: creds
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
+

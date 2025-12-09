@@ -1,9 +1,9 @@
 using Cloudy.Application.DTOs;
 using Cloudy.Application.Interfaces.Repositories;
+using Cloudy.Application.Interfaces.Services;
+using Cloudy.Application.Services;
 using Cloudy.Domain.Entities;
-using Cloudy.Infrastructure.Services;
 using FluentAssertions;
-using Microsoft.AspNetCore.Identity;
 using Moq;
 
 namespace Cloudy.Infrastructure.Tests.Services;
@@ -11,7 +11,7 @@ namespace Cloudy.Infrastructure.Tests.Services;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _repoMock = new();
-    private readonly Mock<IPasswordHasher<User>> _hasherMock = new();
+    private readonly Mock<IPasswordHasher> _hasherMock = new();
 
     private UserService CreateService()
         => new UserService(_repoMock.Object, _hasherMock.Object);
@@ -22,7 +22,7 @@ public class UserServiceTests
         // Arrange
         var dto = new RegisterDto("alice", "alice@example.com", "pw123");
         _repoMock.Setup(r => r.GetByEmailAsync(dto.Email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
-        _hasherMock.Setup(h => h.HashPassword(It.IsAny<User>(), dto.Password)).Returns("hashedpw");
+        _hasherMock.Setup(h => h.HashPassword(It.IsAny<object>(), dto.Password)).Returns("hashedpw");
         _repoMock.Setup(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var service = CreateService();
