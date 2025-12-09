@@ -6,18 +6,14 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using DotNetEnv;
 
-//----------------------
 // Environment as argument (local debugging without docker)
-//----------------------
 var envFile = GetArgValue(args, "--env-file");
 if (!string.IsNullOrWhiteSpace(envFile) && File.Exists(envFile))
     Env.Load(envFile);
 
 var builder = WebApplication.CreateBuilder(args);
 
-//----------------------
 // Configuration
-//----------------------
 SetDefaultConnectionFromEnvIfExists(builder, envFile);
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -35,15 +31,11 @@ if (string.IsNullOrWhiteSpace(minioEndpoint))
 if (string.IsNullOrWhiteSpace(minioAccessKey) || string.IsNullOrWhiteSpace(minioSecretKey))
     throw new InvalidOperationException("MinIO credentials missing (Minio:AccessKey/SecretKey).");
 
-//----------------------
 // Service Registration
-//----------------------
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers();
 
-//----------------------
 // CORS
-//----------------------
 const string corsPolicy = "Frontend";
 builder.Services.AddCors(options =>
 {
@@ -62,9 +54,7 @@ builder.Services.AddCors(options =>
 });
 
 
-//----------------------
 // Authentication & Authorization
-//----------------------
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -87,9 +77,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-//----------------------
 // Swagger / OpenAPI
-//----------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(c =>
@@ -97,14 +85,10 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Cloudy API", Version = "v1" });
 });
 
-//----------------------
 // Build App
-//----------------------
 var app = builder.Build();
 
-//----------------------
 // Middleware Pipeline
-//----------------------
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
