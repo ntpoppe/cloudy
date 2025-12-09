@@ -1,102 +1,58 @@
-# Cloudy - My Personal Cloud Platform
+# Cloudy
 
-A full-stack cloud storage solution, featuring a React frontend and an ASP.NET REST backend following clean architecture principles, with comprehensive unit testing.  
+A personal cloud storage application demonstrating production-grade backend architecture with clean separation of concerns, comprehensive testing, and containerized deployment.
 
-Try it here: (self-hosted, so the containers may not be running and restricts storage to 5MB.): https://www.natetp.duckdns.org/cloudy
+**Try it here:** https://www.natetp.duckdns.org/cloudy  
+*(Self-hosted; containers may be offline. Storage limited to 5MB for demo purposes.)*
 
-## Features
+## Overview
 
-- **User Authentication System**
-  - JWT-based authentication
-  - User registration and login
-  - Protected routes and middleware
-  - Session management
- 
-- **File Management**
-  - File uploading, storage, and deletion
-  - Organized per user
-  - Secure access control for files
+Cloudy is a full-stack file storage platform that implements clean architecture principles to achieve maintainable, testable, and scalable backend design. The system separates business logic from infrastructure concerns, enabling easy testing and future migrations between storage providers or databases.
 
-- **Modern React Frontend**
-  - Responsive UI built with Tailwind CSS
-  - Component-based architecture with TypeScript
-  - React Router for navigation
-  - Context-based state management
-  - Custom hooks for business logic
+## Architecture
 
-- **ASP.NET Backend**
-  - Clean Architecture (Domain, Application, Infrastructure, API layers)
-  - Entity Framework Core with PostgreSQL
-  - JWT token authentication
-  - RESTful API endpoints
-  - Comprehensive test coverage
- 
-- **CI**
-  - Automated build and test on every pull request
+The backend follows **Clean Architecture** with strict layer boundaries and dependency inversion:
 
-##  Architecture
+- **Domain**: Core entities (`File`, `Folder`, `User`) and business rules. Zero framework dependencies.
+- **Application**: Use case handlers, service interfaces, and business logic orchestration. Depends only on Domain.
+- **Infrastructure**: EF Core repositories, MinIO blob storage adapter, JWT implementation. Implements Application interfaces.
+- **API**: REST endpoints, DTOs, authentication middleware. Thin layer that delegates to Application services.
 
-### **Frontend (React + TypeScript)**
-```
-client/
-├── src/
-│   ├── components/          # Reusable UI components
-│   │   ├── ui/             # Base UI components (Button, Card, Input, etc.)
-│   │   ├── auth/           # Authentication components
-│   │   ├── files/          # File management components
-│   │   ├── layout/         # Layout and navigation components
-│   │   └── activity/       # Activity and notification components
-│   ├── pages/              # Route components
-│   │   ├── auth/           # Authentication pages
-│   │   └── dashboard/      # Main application dashboard
-│   ├── hooks/              # Custom React hooks
-│   ├── contexts/           # React context providers
-│   ├── services/           # API service layer
-│   ├── types/              # TypeScript type definitions
-│   └── lib/                # Utility functions and configurations
-```
-
-### **Backend (.NET 9 + Clean Architecture)**
-```
-server/
-├── src/
-│   ├── Cloudy.API/         # Web API layer
-│   ├── Cloudy.Application/  # Business logic and use cases
-│   ├── Cloudy.Domain/      # Domain models and business rules
-│   └── Cloudy.Infrastructure/ # Data access and external services
-├── tests/                   # Comprehensive test suite
-└── docker-compose.yml       # Development environment setup
-```
+This structure ensures business logic remains testable without databases or external services, and infrastructure can be swapped (e.g., MinIO → S3, PostgreSQL → SQL Server) without touching core logic.
 
 ## Tech Stack
 
-### **Frontend**
-- React 19
-- TypeScript 5.8
-- Vite
+### Backend
+- **.NET 9** with ASP.NET Core
+- **Entity Framework Core** with PostgreSQL
+- **MinIO** for object storage (abstracted via `IBlobStore` interface)
+- **JWT Bearer** authentication
+- **Swagger/OpenAPI** documentation
+- **Docker** multi-stage builds
 
-### **Backend**
-- .NET 9*
-- Entity Framework Core
-- Postgres
-- JWT Bearer
-- Swagger/OpenAPI
-- Clean Architecture
+### Frontend
+- React 19 + TypeScript
+- Tailwind CSS
+- Production-ready authentication and file management UI
 
-### **Development Tools**
-- Docker
-- Git
+### DevOps
+- **CI/CD**: Automated build and test on pull requests
+- **Docker Compose** for local development
+- Self-hosted deployment with reverse proxy
+
+## Key Engineering Practices
+
+- **Separation of Concerns**: Domain and Application layers have no framework dependencies
+- **Repository Pattern**: Data access abstracted behind interfaces
+- **Unit of Work**: Transaction management for consistency
+- **Interface-Based Design**: Storage abstraction (`IBlobStore`) allows swapping MinIO for S3/Azure without code changes
+- **Comprehensive Testing**: Unit tests for all backend layers
+- **Containerization**: Production-ready Docker images with multi-stage builds
 
 ## Testing
-- Test coverage for backend layers
+
+Backend includes unit test coverage across Domain, Application, and Infrastructure layers, validating business logic independently of external dependencies.
 
 ## Deployment
-### **Hosting**
-- Self-hosted on a personal laptop using a reverse proxy
-  
-### **Docker Support**
-- Multi-stage Docker builds for both frontend and backend
-- Docker Compose for local development
-- Production-ready containerization
 
-
+Fully containerized with Docker Compose. Multi-stage builds optimize image size and build time. Self-hosted on personal infrastructure with reverse proxy configuration.
